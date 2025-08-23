@@ -1,0 +1,305 @@
+# 📋 Product Backlog & Roadmap - Autumnus Juris
+
+## 🎯 Visão Geral do Projeto
+
+**Objetivo:** Desenvolver um sistema completo de gestão jurídica moderno e eficiente.
+
+**Status Atual:** Fase 1 Concluída ✅ | Iniciando Fase 2 (MVP) 🚀
+
+---
+
+## 🗺️ **ROADMAP - 10 FASES DE DESENVOLVIMENTO**
+
+### **📊 Progress Overview**
+```
+Fase 1: ████████████████████████████████ 100% ✅ CONCLUÍDA
+Fase 2: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0% 🔄 EM ANDAMENTO
+Fase 3: ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0% ⏳ PLANEJADA
+```
+
+---
+
+## 🏗️ **FASE 1 - FUNDAÇÃO E PROTÓTIPO** ✅ **CONCLUÍDA**
+
+**Período:** Concluído  
+**Status:** ✅ 100% Entregue  
+**Objetivo:** Estabelecer base tecnológica e interface inicial
+
+### ✅ **Itens Entregues:**
+
+#### **🎨 Interface e Design**
+- [x] **AJ-001:** Tela de login responsiva e profissional
+- [x] **AJ-002:** Sistema de design consistente (Tailwind CSS)
+- [x] **AJ-003:** Componentes UI base (Button, Input, Card, Label)
+- [x] **AJ-004:** Paleta de cores jurídica e tipografia
+- [x] **AJ-005:** Layout responsivo (mobile/desktop)
+
+#### **⚙️ Configuração Técnica**
+- [x] **AJ-006:** Configuração React 18 + TypeScript
+- [x] **AJ-007:** Setup Vite para desenvolvimento
+- [x] **AJ-008:** Configuração TanStack Query v5
+- [x] **AJ-009:** Estrutura de pastas otimizada
+- [x] **AJ-010:** Sistema de build e deploy
+
+#### **🔧 Ferramentas de Desenvolvimento**
+- [x] **AJ-011:** ESLint e Prettier configurados
+- [x] **AJ-012:** DevTools do React Query
+- [x] **AJ-013:** Hot reload e development server
+- [x] **AJ-014:** TypeScript strict mode
+- [x] **AJ-015:** Path mapping (@/ aliases)
+
+---
+
+## 🚀 **FASE 2 - MVP (PRODUTO MÍNIMO VIÁVEL)** 🔄 **EM ANDAMENTO**
+
+**Período:** Em desenvolvimento  
+**Objetivo:** Tornar o sistema funcional e utilizável  
+**Prioridade:** ALTA 🔴
+
+### **🔐 Autenticação Funcional**
+- [ ] **AJ-016:** Sistema de autenticação JWT completo
+- [ ] **AJ-017:** Integração com backend de autenticação
+- [ ] **AJ-018:** Proteção de rotas privadas
+- [ ] **AJ-019:** Persistência de sessão (refresh tokens)
+- [ ] **AJ-020:** Logout funcional e limpar cache
+
+### **📱 Navegação e Estrutura**
+- [ ] **AJ-021:** Dashboard principal pós-login
+- [ ] **AJ-022:** Menu de navegação lateral/superior
+- [ ] **AJ-023:** Roteamento entre páginas
+- [ ] **AJ-024:** Breadcrumb de navegação
+- [ ] **AJ-025:** Estados de loading e erro globais
+
+### **👤 Gestão Básica de Usuários**
+- [ ] **AJ-026:** Perfil do usuário logado
+- [ ] **AJ-027:** Edição de dados pessoais
+- [ ] **AJ-028:** Alteração de senha
+- [ ] **AJ-029:** Foto de perfil básica
+- [ ] **AJ-030:** Preferências do usuário
+
+### **📂 CRUD Básico de Casos**
+- [ ] **AJ-031:** Lista de casos jurídicos
+- [ ] **AJ-032:** Criar novo caso
+- [ ] **AJ-033:** Visualizar detalhes do caso
+- [ ] **AJ-034:** Editar informações do caso
+- [ ] **AJ-035:** Deletar caso (com confirmação)
+
+---
+
+## 📈 **FASE 3 - GESTÃO DE CLIENTES** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 2  
+**Objetivo:** Sistema completo de CRM jurídico  
+**Prioridade:** ALTA 🔴
+
+### **👥 Cadastro e Gestão de Clientes**
+- [ ] **AJ-036:** CRUD completo de clientes
+- [ ] **AJ-037:** Formulário detalhado de cliente (pessoa física/jurídica)
+- [ ] **AJ-038:** Histórico de interações com cliente
+- [ ] **AJ-039:** Documentos do cliente
+- [ ] **AJ-040:** Status e classificação de clientes
+
+### **🔗 Relacionamento Cliente-Caso**
+- [ ] **AJ-041:** Vincular clientes a casos
+- [ ] **AJ-042:** Múltiplos clientes por caso
+- [ ] **AJ-043:** Histórico de casos do cliente
+- [ ] **AJ-044:** Dashboard do cliente
+- [ ] **AJ-045:** Comunicação integrada
+
+---
+
+## 📊 **FASE 4 - GESTÃO DE PROCESSOS** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 3  
+**Objetivo:** Acompanhamento processual completo  
+**Prioridade:** ALTA 🔴
+
+### **⚖️ Controle Processual**
+- [ ] **AJ-046:** Cadastro de processos judiciais
+- [ ] **AJ-047:** Numeração única de processos
+- [ ] **AJ-048:** Status e fases processuais
+- [ ] **AJ-049:** Comarca e vara competente
+- [ ] **AJ-050:** Valor da causa e custas
+
+### **📅 Agenda e Prazos**
+- [ ] **AJ-051:** Sistema de prazos processuais
+- [ ] **AJ-052:** Calendário integrado
+- [ ] **AJ-053:** Alertas de vencimento
+- [ ] **AJ-054:** Audiências e compromissos
+- [ ] **AJ-055:** Notificações automáticas
+
+---
+
+## 📄 **FASE 5 - GESTÃO DOCUMENTAL** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 4  
+**Objetivo:** Organização e controle de documentos  
+**Prioridade:** MÉDIA 🟡
+
+### **📁 Upload e Organização**
+- [ ] **AJ-056:** Upload de arquivos (PDF, DOC, imagens)
+- [ ] **AJ-057:** Organização por pastas e tags
+- [ ] **AJ-058:** Controle de versões de documentos
+- [ ] **AJ-059:** Pesquisa textual em documentos
+- [ ] **AJ-060:** Sharing seguro de documentos
+
+### **📑 Modelos e Templates**
+- [ ] **AJ-061:** Biblioteca de modelos jurídicos
+- [ ] **AJ-062:** Editor de documentos integrado
+- [ ] **AJ-063:** Assinatura digital
+- [ ] **AJ-064:** Geração automática de documentos
+- [ ] **AJ-065:** Histórico de alterações
+
+---
+
+## 💰 **FASE 6 - GESTÃO FINANCEIRA** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 5  
+**Objetivo:** Controle financeiro e faturamento  
+**Prioridade:** ALTA 🔴
+
+### **💵 Controle Financeiro**
+- [ ] **AJ-066:** Registro de honorários
+- [ ] **AJ-067:** Controle de despesas processuais
+- [ ] **AJ-068:** Faturamento e cobrança
+- [ ] **AJ-069:** Relatórios financeiros
+- [ ] **AJ-070:** Integração bancária básica
+
+### **📊 Relatórios e Analytics**
+- [ ] **AJ-071:** Dashboard financeiro
+- [ ] **AJ-072:** Relatórios de receita/despesa
+- [ ] **AJ-073:** Análise de rentabilidade por caso
+- [ ] **AJ-074:** Projeções e metas
+- [ ] **AJ-075:** Exportação de dados contábeis
+
+---
+
+## 🏢 **FASE 7 - GESTÃO DE ESCRITÓRIO** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 6  
+**Objetivo:** Administração completa do escritório  
+**Prioridade:** MÉDIA 🟡
+
+### **👨‍💼 Gestão de Equipe**
+- [ ] **AJ-076:** Cadastro de advogados e funcionários
+- [ ] **AJ-077:** Permissões e níveis de acesso
+- [ ] **AJ-078:** Distribuição de casos
+- [ ] **AJ-079:** Controle de produtividade
+- [ ] **AJ-080:** Sistema de comunicação interna
+
+### **📈 Métricas e Performance**
+- [ ] **AJ-081:** Dashboard executivo
+- [ ] **AJ-082:** KPIs do escritório
+- [ ] **AJ-083:** Relatórios de performance
+- [ ] **AJ-084:** Análise de carga de trabalho
+- [ ] **AJ-085:** Planejamento estratégico
+
+---
+
+## 🔗 **FASE 8 - INTEGRAÇÕES EXTERNAS** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 7  
+**Objetivo:** Conectividade com sistemas externos  
+**Prioridade:** MÉDIA 🟡
+
+### **⚖️ Integração Tribunais**
+- [ ] **AJ-086:** Consulta processo CNJ
+- [ ] **AJ-087:** API e-SAJ integração
+- [ ] **AJ-088:** Peticionamento eletrônico
+- [ ] **AJ-089:** Consulta de andamentos
+- [ ] **AJ-090:** Importação de dados processuais
+
+### **🏛️ Outros Sistemas**
+- [ ] **AJ-091:** Integração Receita Federal
+- [ ] **AJ-092:** Consulta CPF/CNPJ
+- [ ] **AJ-093:** API bancos para cobrança
+- [ ] **AJ-094:** Sistema de backup em nuvem
+- [ ] **AJ-095:** Integração contabilidade
+
+---
+
+## 🔒 **FASE 9 - SEGURANÇA AVANÇADA** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 8  
+**Objetivo:** Máxima segurança e compliance  
+**Prioridade:** ALTA 🔴
+
+### **🛡️ Segurança e Compliance**
+- [ ] **AJ-096:** Auditoria completa de ações
+- [ ] **AJ-097:** Criptografia end-to-end
+- [ ] **AJ-098:** Backup automático e recuperação
+- [ ] **AJ-099:** Compliance LGPD
+- [ ] **AJ-100:** Certificação de segurança
+
+### **🔐 Autenticação Avançada**
+- [ ] **AJ-101:** Autenticação de dois fatores (2FA)
+- [ ] **AJ-102:** Login com certificado digital
+- [ ] **AJ-103:** SSO (Single Sign-On)
+- [ ] **AJ-104:** Biometria (quando disponível)
+- [ ] **AJ-105:** Gestão avançada de sessões
+
+---
+
+## 🚀 **FASE 10 - OTIMIZAÇÃO E EXPANSÃO** ⏳ **PLANEJADA**
+
+**Período:** Após Fase 9  
+**Objetivo:** Performance e recursos avançados  
+**Prioridade:** BAIXA 🟢
+
+### **⚡ Performance e Otimização**
+- [ ] **AJ-106:** Cache avançado e CDN
+- [ ] **AJ-107:** Lazy loading otimizado
+- [ ] **AJ-108:** PWA (Progressive Web App)
+- [ ] **AJ-109:** Offline mode básico
+- [ ] **AJ-110:** Otimização mobile avançada
+
+### **🤖 Recursos Avançados**
+- [ ] **AJ-111:** IA para análise de documentos
+- [ ] **AJ-112:** Chatbot de suporte
+- [ ] **AJ-113:** Análise preditiva de casos
+- [ ] **AJ-114:** API pública para integrações
+- [ ] **AJ-115:** Sistema de plugins/extensões
+
+---
+
+## 📊 **MÉTRICAS DE SUCESSO POR FASE**
+
+### **Fase 1 ✅**
+- Interface profissional implementada
+- Estrutura técnica sólida
+- Componentes reutilizáveis criados
+
+### **Fase 2 🔄**
+- Login funcional 100%
+- Navegação básica operacional
+- CRUD de casos implementado
+- Sistema utilizável por usuários reais
+
+### **Fases Futuras**
+- Redução de 50% no tempo de gestão de casos
+- 100% dos documentos digitalizados
+- 90% de satisfação dos usuários
+- ROI positivo dentro de 12 meses
+
+---
+
+## 🏷️ **LEGENDA DE PRIORIDADES**
+
+- 🔴 **ALTA** - Essencial para funcionamento
+- 🟡 **MÉDIA** - Importante para eficiência
+- 🟢 **BAIXA** - Nice-to-have, futuro
+
+---
+
+## 📝 **PRÓXIMOS PASSOS IMEDIATOS**
+
+1. **Implementar backend de autenticação** (AJ-016)
+2. **Criar dashboard principal** (AJ-021)
+3. **Sistema de navegação** (AJ-022, AJ-023)
+4. **CRUD básico de casos** (AJ-031 até AJ-035)
+
+**Meta da Fase 2:** Sistema utilizável por advogados reais em ambiente de produção.
+
+---
+
+*Última atualização: Fase 1 concluída com sucesso! 🎉*
