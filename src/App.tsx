@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx - CORRIGIDO PARA FASE 3
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -14,14 +14,21 @@ import { Layout } from '@/components/layout/Layout';
 // Pages
 import LoginPage from '@/pages/auth/LoginPage';
 import Dashboard from '@/pages/dashboard/Dashboard';
+
+// Cases
 import CasesList from '@/pages/cases/CasesList';
 import CreateCase from '@/pages/cases/CreateCase';
+
+// Clients - NOVOS
+import ClientsList from '@/pages/clients/ClientsList';
+import CreateClient from '@/pages/clients/CreateClient';
+import ClientDetail from '@/pages/clients/ClientDetail';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
 
-// Placeholder pages (você pode criar depois)
+// Placeholder pages
 import ComingSoon from '@/pages/common/ComingSoon';
 
 function App() {
@@ -56,7 +63,7 @@ function App() {
           }
         />
 
-        {/* Casos */}
+        {/* === CASOS === */}
         <Route
           path="/cases"
           element={
@@ -86,7 +93,8 @@ function App() {
               <Layout>
                 <ComingSoon 
                   title="Visualizar Caso" 
-                  message="A página de detalhes do caso está em desenvolvimento" 
+                  message="A página de detalhes do caso está em desenvolvimento"
+                  estimatedDate="Fase 4"
                 />
               </Layout>
             </ProtectedRoute>
@@ -100,28 +108,64 @@ function App() {
               <Layout>
                 <ComingSoon 
                   title="Editar Caso" 
-                  message="A página de edição do caso está em desenvolvimento" 
+                  message="A página de edição do caso está em desenvolvimento"
+                  estimatedDate="Fase 4"
                 />
               </Layout>
             </ProtectedRoute>
           }
         />
 
-        {/* Outras rotas do sistema */}
+        {/* === CLIENTES === NOVOS PARA FASE 3 */}
         <Route
           path="/clients"
           element={
             <ProtectedRoute>
               <Layout>
+                <ClientsList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/clients/new"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateClient />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/clients/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ClientDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/clients/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
                 <ComingSoon 
-                  title="Clientes" 
-                  message="O módulo de clientes está em desenvolvimento" 
+                  title="Editar Cliente" 
+                  message="A página de edição do cliente está em desenvolvimento"
+                  estimatedDate="Próxima atualização"
                 />
               </Layout>
             </ProtectedRoute>
           }
         />
 
+        {/* === OUTROS MÓDULOS === */}
         <Route
           path="/calendar"
           element={
@@ -130,6 +174,7 @@ function App() {
                 <ComingSoon 
                   title="Agenda" 
                   message="O módulo de agenda está em desenvolvimento" 
+                  estimatedDate="Fase 4"
                 />
               </Layout>
             </ProtectedRoute>
@@ -144,6 +189,7 @@ function App() {
                 <ComingSoon 
                   title="Financeiro" 
                   message="O módulo financeiro está em desenvolvimento" 
+                  estimatedDate="Fase 6"
                 />
               </Layout>
             </ProtectedRoute>
@@ -158,6 +204,7 @@ function App() {
                 <ComingSoon 
                   title="Configurações" 
                   message="A página de configurações está em desenvolvimento" 
+                  estimatedDate="Fase 7"
                 />
               </Layout>
             </ProtectedRoute>
@@ -172,6 +219,7 @@ function App() {
                 <ComingSoon 
                   title="Meu Perfil" 
                   message="A página de perfil está em desenvolvimento" 
+                  estimatedDate="Fase 7"
                 />
               </Layout>
             </ProtectedRoute>
