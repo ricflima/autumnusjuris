@@ -1,4 +1,4 @@
-// src/pages/clients/CreateClient.tsx - CORRIGIDO
+// src/pages/clients/CreateClient.tsx - ERRO CORRIGIDO
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -198,6 +198,48 @@ export default function CreateClient() {
     }
   }, [watchType, clientType, setValue]);
 
+  // Funções de formatação
+  const formatPhone = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 10) {
+      return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    } else {
+      return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    }
+  };
+
+  const formatCPF = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatCNPJ = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  };
+
+  const formatCEP = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
+  };
+
+  // Handlers de formatação
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setValue('phone', formatted);
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = watchDocumentType === 'cpf' ? formatCPF(value) : formatCNPJ(value);
+    setValue('document', formatted);
+  };
+
+  const handleCEPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCEP(e.target.value);
+    setValue('zipCode', formatted);
+  };
+
   // Mutation para criar cliente
   const createClientMutation = useMutation({
     mutationFn: (data: CreateClientRequest) => clientsService.createClient(data),
@@ -263,73 +305,24 @@ export default function CreateClient() {
     }
   };
 
-  // Formatação automática de campos
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 11) {
-      value = value.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
-    }
-    setValue('phone', value);
-  };
-
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (watchDocumentType === 'cpf') {
-      value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else {
-      value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-    setValue('document', value);
-  };
-
-  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    value = value.replace(/(\d{5})(\d{3})/, '$1-$2');
-    setValue('zipCode', value);
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => navigate('/clients')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </Button>
-          
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <User className="w-8 h-8 text-blue-600" />
-              Novo Cliente
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Preencha as informações do cliente
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">Novo Cliente</h1>
+            <p className="text-gray-600">Cadastre um novo cliente no sistema</p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={createClientMutation.isPending}
-          >
-            Cancelar
-          </Button>
-          
-          <Button
-            onClick={handleSubmit(onSubmit)}
-            disabled={!isValid || createClientMutation.isPending}
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {createClientMutation.isPending ? 'Salvando...' : 'Salvar Cliente'}
-          </Button>
         </div>
       </div>
 
@@ -341,46 +334,50 @@ export default function CreateClient() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="individual"
-                  value="individual"
-                  {...register('type')}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="individual" className="flex items-center gap-2 cursor-pointer">
-                  <User className="w-4 h-4" />
-                  Pessoa Física
-                </label>
-              </div>
+              <button
+                type="button"
+                onClick={() => setValue('type', 'individual')}
+                className={`p-4 border-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  clientType === 'individual'
+                    ? 'border-slate-500 bg-slate-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <User className="w-8 h-8 text-slate-600" />
+                <div className="text-left">
+                  <div className="font-medium">Pessoa Física</div>
+                  <div className="text-sm text-gray-600">Cliente individual</div>
+                </div>
+              </button>
               
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="company"
-                  value="company"
-                  {...register('type')}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="company" className="flex items-center gap-2 cursor-pointer">
-                  <Building className="w-4 h-4" />
-                  Pessoa Jurídica
-                </label>
-              </div>
+              <button
+                type="button"
+                onClick={() => setValue('type', 'company')}
+                className={`p-4 border-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  clientType === 'company'
+                    ? 'border-slate-500 bg-slate-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Building className="w-8 h-8 text-slate-600" />
+                <div className="text-left">
+                  <div className="font-medium">Pessoa Jurídica</div>
+                  <div className="text-sm text-gray-600">Empresa ou organização</div>
+                </div>
+              </button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Informações Básicas */}
+        {/* Dados Básicos */}
         <Card>
           <CardHeader>
-            <CardTitle>Informações Básicas</CardTitle>
+            <CardTitle>Dados Básicos</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Nome/Razão Social */}
-              <div className="md:col-span-2">
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nome */}
+              <div>
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                   {clientType === 'individual' ? 'Nome Completo' : 'Razão Social'} *
                 </Label>
@@ -390,6 +387,26 @@ export default function CreateClient() {
                   placeholder={clientType === 'individual' ? 'João da Silva' : 'Empresa ABC Ltda'}
                   className="mt-1"
                 />
+                {errors.name && (
+                  <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+                )}
+              </div>
+
+              {/* E-mail */}
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  E-mail *
+                </Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register('email')}
+                    placeholder="exemplo@email.com"
+                    className="pl-10"
+                  />
+                </div>
                 {errors.email && (
                   <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
                 )}
@@ -444,9 +461,9 @@ export default function CreateClient() {
               </div>
 
               {/* Classificação */}
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="classification" className="text-sm font-medium text-gray-700">
-                  Classificação *
+                  Classificação
                 </Label>
                 <select
                   id="classification"
@@ -466,14 +483,14 @@ export default function CreateClient() {
           </CardContent>
         </Card>
 
-        {/* Informações Específicas */}
+        {/* Campos Específicos */}
         {clientType === 'individual' ? (
           <Card>
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Data de Nascimento */}
                 <div>
                   <Label htmlFor="birthDate" className="text-sm font-medium text-gray-700">
@@ -498,7 +515,7 @@ export default function CreateClient() {
                   <Input
                     id="profession"
                     {...register('profession')}
-                    placeholder="Engenheiro, Médico, etc."
+                    placeholder="Ex: Advogado, Médico, Empresário"
                     className="mt-1"
                   />
                   {errors.profession && (
@@ -562,8 +579,8 @@ export default function CreateClient() {
               Endereço
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* CEP */}
               <div>
                 <Label htmlFor="zipCode" className="text-sm font-medium text-gray-700">
@@ -572,7 +589,7 @@ export default function CreateClient() {
                 <Input
                   id="zipCode"
                   {...register('zipCode')}
-                  onChange={handleZipCodeChange}
+                  onChange={handleCEPChange}
                   placeholder="12345-678"
                   maxLength={9}
                   className="mt-1"
@@ -590,7 +607,7 @@ export default function CreateClient() {
                 <Input
                   id="street"
                   {...register('street')}
-                  placeholder="Rua das Flores, Av. Paulista, etc."
+                  placeholder="Rua das Flores"
                   className="mt-1"
                 />
                 {errors.street && (
@@ -622,9 +639,12 @@ export default function CreateClient() {
                 <Input
                   id="complement"
                   {...register('complement')}
-                  placeholder="Apto 45, Sala 12, etc."
+                  placeholder="Apto 45"
                   className="mt-1"
                 />
+                {errors.complement && (
+                  <p className="text-sm text-red-600 mt-1">{errors.complement.message}</p>
+                )}
               </div>
 
               {/* Bairro */}
@@ -635,7 +655,7 @@ export default function CreateClient() {
                 <Input
                   id="neighborhood"
                   {...register('neighborhood')}
-                  placeholder="Centro, Vila Olimpia, etc."
+                  placeholder="Centro"
                   className="mt-1"
                 />
                 {errors.neighborhood && (
@@ -689,9 +709,12 @@ export default function CreateClient() {
                 <Input
                   id="country"
                   {...register('country')}
+                  defaultValue="Brasil"
                   className="mt-1"
-                  readOnly
                 />
+                {errors.country && (
+                  <p className="text-sm text-red-600 mt-1">{errors.country.message}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -700,7 +723,7 @@ export default function CreateClient() {
         {/* Observações */}
         <Card>
           <CardHeader>
-            <CardTitle>Observações Adicionais</CardTitle>
+            <CardTitle>Observações</CardTitle>
           </CardHeader>
           <CardContent>
             <div>
@@ -710,8 +733,8 @@ export default function CreateClient() {
               <textarea
                 id="notes"
                 {...register('notes')}
+                placeholder="Informações adicionais sobre o cliente..."
                 rows={4}
-                placeholder="Informações importantes sobre o cliente, histórico, preferências, etc."
                 className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent resize-vertical"
                 maxLength={1000}
               />
@@ -725,7 +748,7 @@ export default function CreateClient() {
           </CardContent>
         </Card>
 
-        {/* Botões de ação (duplicados no final) */}
+        {/* Botões de ação */}
         <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
           <Button
             type="button"
@@ -748,24 +771,4 @@ export default function CreateClient() {
       </form>
     </div>
   );
-}.name && (
-                  <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-                )}
-              </div>
-
-              {/* E-mail */}
-              <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  E-mail *
-                </Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register('email')}
-                    placeholder="exemplo@email.com"
-                    className="pl-10"
-                  />
-                </div>
-                {errors
+}
