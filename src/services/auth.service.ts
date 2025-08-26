@@ -115,7 +115,10 @@ class AuthService {
         const { password, ...userWithoutPassword } = user;
         
         const response: AuthResponse = {
-          user: userWithoutPassword,
+          user: {
+            ...userWithoutPassword,
+            avatar: userWithoutPassword.avatar || undefined, // Converte null para undefined
+          },
           token,
           refreshToken: `refresh_${token}`,
         };

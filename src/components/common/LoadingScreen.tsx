@@ -52,7 +52,7 @@ export function LoadingScreen({
       </div>
       
       {/* CSS personalizado para animação */}
-      <style jsx>{`
+      <style>{`
         @keyframes loading-bar {
           0% { width: 0%; transform: translateX(-100%); }
           50% { width: 100%; transform: translateX(0%); }

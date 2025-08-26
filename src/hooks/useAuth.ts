@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService, type LoginCredentials } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from 'react';
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export const useAuth = () => {
   } = useAuthStore();
 
   // Query para verificar usuário atual
-  const { isLoading: isCheckingAuth } = useQuery({
+  const { isLoading: isCheckingAuth, data: userData, error: authError } = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: authService.getCurrentUser,
     enabled: !!token && !user,
@@ -29,14 +30,7 @@ export const useAuth = () => {
     staleTime: 10 * 60 * 1000, // 10 minutos
     gcTime: 15 * 60 * 1000, // 15 minutos
     refetchOnWindowFocus: false,
-    onSuccess: (userData) => {
-      setUser(userData);
-    },
-    onError: (error) => {
-      console.error('Erro ao verificar autenticação:', error);
-      clearUser();
-      navigate('/login', { replace: true });
-    },
+    // Remove onSuccess e onError
   });
 
   // Mutation para login

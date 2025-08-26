@@ -120,7 +120,7 @@ export interface ClientFilters {
   state?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'createdAt' | 'lastContact' | 'totalCases' | 'totalBilled';
+  sortBy?: 'name' | 'createdAt' | 'lastContact' | 'totalCases' | 'totalBilled' | 'classification';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -381,20 +381,27 @@ class ClientsService {
         const sortOrder = filters.sortOrder || 'asc';
         
         filteredClients.sort((a, b) => {
-          let aVal = a[sortBy];
-          let bVal = b[sortBy];
-          
+          let result = 0;
+
           if (sortBy === 'classification') {
             const classOrder = { vip: 4, premium: 3, standard: 2, basic: 1 };
-            aVal = classOrder[a.classification];
-            bVal = classOrder[b.classification];
-          }
-          
-          if (sortOrder === 'asc') {
-            return aVal > bVal ? 1 : -1;
+            const aVal = classOrder[a.classification] || 0;
+            const bVal = classOrder[b.classification] || 0;
+            result = aVal - bVal;
+          } else if (sortBy === 'name') {
+            result = a.name.localeCompare(b.name);
+          } else if (sortBy === 'createdAt' || sortBy === 'lastContact') {
+            const aDate = a[sortBy] ? new Date(a[sortBy] as string).getTime() : 0;
+            const bDate = b[sortBy] ? new Date(b[sortBy] as string).getTime() : 0;
+            result = aDate - bDate;
+          } else if (sortBy === 'totalCases' || sortBy === 'totalBilled') {
+            result = (a[sortBy] as number) - (b[sortBy] as number);
           } else {
-            return aVal < bVal ? 1 : -1;
+            // fallback para string
+            result = String(a[sortBy] || '').localeCompare(String(b[sortBy] || ''));
           }
+
+          return sortOrder === 'asc' ? result : -result;
         });
         
         // Paginação

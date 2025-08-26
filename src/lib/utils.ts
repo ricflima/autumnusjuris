@@ -80,3 +80,13 @@ export const getDaysUntil = (dateString: string): number => {
 export const cn = (...classes: (string | undefined | null | false)[]): string => {
   return classes.filter(Boolean).join(' ');
 };
+
+// ADICIONAR no final do arquivo utils.ts:
+export const formatCurrencyCompactDashboard = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};

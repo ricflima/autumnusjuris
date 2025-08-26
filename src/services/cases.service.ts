@@ -334,13 +334,13 @@ class CasesService {
         const sortOrder = filters.sortOrder || 'desc';
         
         filteredCases.sort((a, b) => {
-          let aVal = a[sortBy];
-          let bVal = b[sortBy];
+          let aVal: any = a[sortBy];
+          let bVal: any = b[sortBy];
           
           if (sortBy === 'priority') {
             const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-            aVal = priorityOrder[a.priority];
-            bVal = priorityOrder[b.priority];
+            aVal = priorityOrder[a.priority as keyof typeof priorityOrder];
+            bVal = priorityOrder[b.priority as keyof typeof priorityOrder];
           }
           
           if (sortOrder === 'asc') {

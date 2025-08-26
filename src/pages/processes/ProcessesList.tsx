@@ -63,7 +63,7 @@ export default function ProcessesList() {
   } = useQuery({
     queryKey: ['processes', filters],
     queryFn: () => processesService.getProcesses(filters),
-    keepPreviousData: true,
+     placeholderData: (previousData) => previousData,
   });
 
   // Mutation para deletar processo

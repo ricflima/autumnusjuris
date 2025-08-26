@@ -79,13 +79,13 @@ const LAWYERS = [
 export default function CreateProcess() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isValid },
   } = useForm<CreateProcessFormData>({
     resolver: zodResolver(createProcessSchema),
@@ -96,11 +96,13 @@ export default function CreateProcess() {
       state: 'SP',
       isConfidential: false,
       filingDate: new Date().toISOString().split('T')[0],
+      clientIds: [],
     },
     mode: 'onChange',
   });
 
   const watchCaseId = watch('caseId');
+  const watchClientIds = watch('clientIds');
 
   // Buscar casos para dropdown
   const { data: casesData } = useQuery({
@@ -119,7 +121,6 @@ export default function CreateProcess() {
     if (watchCaseId && casesData) {
       const selectedCase = casesData.cases.find(c => c.id === watchCaseId);
       if (selectedCase?.clientId) {
-        setSelectedClientIds([selectedCase.clientId]);
         setValue('clientIds', [selectedCase.clientId]);
       }
     }
@@ -130,12 +131,12 @@ export default function CreateProcess() {
     mutationFn: (data: CreateProcessRequest) => processesService.createProcess(data),
     onSuccess: (newProcess) => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
-      
+
       toast.success('Processo criado com sucesso!', {
         duration: 4000,
         icon: '⚖️',
       });
-      
+
       navigate(`/processes/${newProcess.id}`);
     },
     onError: (error: any) => {
@@ -149,6 +150,20 @@ export default function CreateProcess() {
 
   const onSubmit = async (data: CreateProcessFormData) => {
     try {
+      // Validação extra para processValue
+      let processValueObj: { amount: number; description?: string } | undefined = undefined;
+      if (data.processValue) {
+        const numeric = parseFloat(
+          data.processValue.replace(/[^\d,]/g, '').replace(',', '.')
+        );
+        if (!isNaN(numeric)) {
+          processValueObj = {
+            amount: numeric,
+            description: data.processValueDescription,
+          };
+        }
+      }
+
       const requestData: CreateProcessRequest = {
         number: data.number,
         internalNumber: data.internalNumber,
@@ -157,7 +172,7 @@ export default function CreateProcess() {
         type: data.type,
         priority: data.priority,
         caseId: data.caseId,
-        clientIds: selectedClientIds,
+        clientIds: data.clientIds,
         responsibleLawyerId: data.responsibleLawyerId,
         court: {
           court: data.court,
@@ -168,19 +183,25 @@ export default function CreateProcess() {
         },
         opposingParty: data.opposingParty,
         opposingLawyer: data.opposingLawyer,
-        processValue: data.processValue ? {
-          amount: parseFloat(data.processValue.replace(/[^\d,]/g, '').replace(',', '.')),
-          description: data.processValueDescription,
-        } : undefined,
+        processValue: processValueObj,
         filingDate: data.filingDate + 'T10:00:00Z',
         citationDate: data.citationDate ? data.citationDate + 'T10:00:00Z' : undefined,
         notes: data.notes,
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : undefined,
+        tags: data.tags
+          ? data.tags
+              .split(',')
+              .map(tag => tag.trim())
+              .filter(Boolean)
+          : undefined,
         isConfidential: data.isConfidential,
       };
-      
+
       await createProcessMutation.mutateAsync(requestData);
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(
+        error?.message || 'Erro ao criar processo. Tente novamente.',
+        { duration: 5000, icon: '❌' }
+      );
       console.error('Erro ao criar processo:', error);
     }
   };
@@ -191,15 +212,16 @@ export default function CreateProcess() {
     }
   };
 
+  // Armazenar valor numérico no estado do formulário, exibir formatado
   const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
     const number = parseInt(value) / 100;
     const formatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(number);
-    setValue('processValue', formatted);
-   };
+    }).format(isNaN(number) ? 0 : number);
+    setValue('processValue', formatted, { shouldValidate: true });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -216,7 +238,7 @@ export default function CreateProcess() {
                 <ArrowLeft className="h-4 w-4" />
                 Voltar
               </Button>
-              
+
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Novo Processo</h1>
                 <p className="mt-1 text-gray-600">
@@ -224,7 +246,7 @@ export default function CreateProcess() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -234,13 +256,13 @@ export default function CreateProcess() {
                 <X className="h-4 w-4" />
                 Cancelar
               </Button>
-              
+
               <Button
                 onClick={handleSubmit(onSubmit)}
-                disabled={!isValid || createProcessMutation.isLoading}
+                disabled={!isValid || createProcessMutation.isPending}
                 className="flex items-center gap-2"
               >
-                {createProcessMutation.isLoading ? (
+                {createProcessMutation.isPending ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
                   <Save className="h-4 w-4" />
@@ -336,7 +358,7 @@ export default function CreateProcess() {
               <User className="h-5 w-5 text-blue-600" />
               Relacionamentos
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="caseId">Caso Relacionado</Label>
@@ -353,7 +375,7 @@ export default function CreateProcess() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <Label htmlFor="responsibleLawyerId">Advogado Responsável *</Label>
                 <select
@@ -372,7 +394,7 @@ export default function CreateProcess() {
                   <p className="mt-1 text-sm text-red-600">{errors.responsibleLawyerId.message}</p>
                 )}
               </div>
-              
+
               <div className="md:col-span-2">
                 <Label>Clientes *</Label>
                 <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3">
@@ -380,17 +402,16 @@ export default function CreateProcess() {
                     <label key={client.id} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedClientIds.includes(client.id)}
+                        aria-label={`Selecionar cliente ${client.name}`}
+                        checked={watchClientIds?.includes(client.id)}
                         onChange={(e) => {
+                          let newIds: string[] = [];
                           if (e.target.checked) {
-                            const newIds = [...selectedClientIds, client.id];
-                            setSelectedClientIds(newIds);
-                            setValue('clientIds', newIds);
+                            newIds = [...(watchClientIds || []), client.id];
                           } else {
-                            const newIds = selectedClientIds.filter(id => id !== client.id);
-                            setSelectedClientIds(newIds);
-                            setValue('clientIds', newIds);
+                            newIds = (watchClientIds || []).filter(id => id !== client.id);
                           }
+                          setValue('clientIds', newIds, { shouldValidate: true });
                         }}
                         className="rounded"
                       />

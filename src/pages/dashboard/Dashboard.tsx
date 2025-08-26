@@ -371,7 +371,7 @@ export default function Dashboard() {
                     </h4>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-gray-500">
-                        {case_.client?.name || 'Cliente não informado'}
+                        {case_.clientId ? `Cliente ID: ${case_.clientId}` : 'Cliente não informado'}
                       </span>
                       <span className="text-xs text-gray-300">•</span>
                       <span className="text-xs text-gray-500">

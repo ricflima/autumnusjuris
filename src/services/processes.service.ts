@@ -414,19 +414,29 @@ class ProcessesService {
       ...data,
       status: 'active' as ProcessStatus,
       phase: 'initial' as ProcessPhase,
-      costs: data.processValue ? {
-        initialFees: { amount: 0, currency: 'BRL' },
-        courtCosts: { amount: 0, currency: 'BRL' },
-        lawyerFees: { amount: 0, currency: 'BRL' },
-        otherExpenses: [],
-        totalCosts: { amount: 0, currency: 'BRL' }
-      } : undefined,
+      processValue: data.processValue
+        ? {
+            ...data.processValue,
+            currency: data.processValue.currency ?? 'BRL', // garante string
+          }
+        : undefined,
+      costs: data.processValue
+        ? {
+            initialFees: { amount: 0, currency: 'BRL' },
+            courtCosts: { amount: 0, currency: 'BRL' },
+            lawyerFees: { amount: 0, currency: 'BRL' },
+            otherExpenses: [],
+            totalCosts: { amount: 0, currency: 'BRL' }
+          }
+        : undefined,
       lastMovementDate: data.filingDate,
       isConfidential: data.isConfidential || false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: 'current-user',
-      daysActive: Math.floor((Date.now() - new Date(data.filingDate).getTime()) / (1000 * 60 * 60 * 24)),
+      daysActive: Math.floor(
+        (Date.now() - new Date(data.filingDate).getTime()) / (1000 * 60 * 60 * 24)
+      ),
       pendingDeadlines: 0,
       recentMovements: []
     };
@@ -446,6 +456,15 @@ class ProcessesService {
     MOCK_PROCESSES[index] = {
       ...MOCK_PROCESSES[index],
       ...data,
+      processValue: data.processValue
+        ? {
+            ...MOCK_PROCESSES[index].processValue, // preserva o que já tinha
+            ...data.processValue,
+            currency: data.processValue.currency 
+              ?? MOCK_PROCESSES[index].processValue?.currency 
+              ?? 'BRL' // garante que nunca será undefined
+          }
+        : MOCK_PROCESSES[index].processValue,
       updatedAt: new Date().toISOString()
     };
     
