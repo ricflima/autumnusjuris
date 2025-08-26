@@ -15,7 +15,8 @@ import {
   User,
   Bell,
   Search,
-  ChevronDown
+  ChevronDown,
+  Gavel
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Casos', href: '/cases', icon: FileText },
   { name: 'Clientes', href: '/clients', icon: Users },
-  { name: 'Agenda', href: '/calendar', icon: Calendar },
+  { name: 'Processos', href: '/processes', icon: Gavel },
+  { name: 'Calendário', href: '/calendar', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },
   { name: 'Configurações', href: '/settings', icon: Settings },
 ];

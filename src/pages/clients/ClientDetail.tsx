@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingScreen, LoadingSpinner } from '@/components/common/LoadingScreen';
 import toast from 'react-hot-toast';
+import { formatDate, formatCurrency, formatDateWithTime } from '@/lib/utils';
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -143,23 +144,6 @@ export default function ClientDetail() {
       task: 'Tarefa'
     };
     return labels[type] || 'Interação';
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   if (clientLoading) {
@@ -284,7 +268,7 @@ export default function ClientDetail() {
               <div>
                 <p className="text-sm text-gray-600">Último Contato</p>
                 <p className="text-sm font-medium text-yellow-800">
-                  {client.lastContact ? formatDate(client.lastContact) : 'Nunca'}
+                  {client.lastContact ? formatDateWithTime(client.lastContact) : 'Nunca'}
                 </p>
               </div>
               <Calendar className="w-8 h-8 text-yellow-600" />

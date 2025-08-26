@@ -22,6 +22,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/common/LoadingScreen';
+import { processesService } from '@/services/processes.service';
+import { Gavel } from 'lucide-react';
+import { formatCurrencyCompact, formatDate } from '@/lib/utils';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -63,9 +66,19 @@ export default function Dashboard() {
     activeClients: allClientsData?.clients.filter(c => c.status === 'active').length || 0,
     prospects: allClientsData?.clients.filter(c => c.status === 'prospect').length || 0,
     revenue: allClientsData?.clients.reduce((sum, c) => sum + c.totalBilled, 0) || 0,
+    totalProcesses: processStatsData?.totalProcesses || 0,
+    activeProcesses: processStatsData?.activeProcesses || 0,
+    overdueDeadlines: processStatsData?.overdueDeadlines || 0,
     pendingTasks: 12, // Será implementado em fases futuras
     upcomingHearings: 8 // Será implementado em fases futuras
   };
+
+  // Query para processos
+  const { data: processStatsData } = useQuery({
+    queryKey: ['dashboard-process-stats'],
+    queryFn: () => processesService.getProcessStatistics(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const quickActions = [
     { 
@@ -95,21 +108,15 @@ export default function Dashboard() {
       href: '/financial',
       color: 'bg-orange-500 hover:bg-orange-600',
       description: 'Ver relatórios financeiros'
-    }
+    },
+    { 
+    icon: Gavel, 
+    label: 'Novo Processo', 
+    href: '/processes/create',
+    color: 'bg-orange-500 hover:bg-orange-600',
+    description: 'Cadastrar novo processo judicial'
+    },
   ];
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -197,7 +204,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {formatCurrency(stats.revenue)}
+              {formatCurrencyCompact(stats.revenue)}
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Acumulado histórico
@@ -222,6 +229,24 @@ export default function Dashboard() {
             </p>
             <Link to="/calendar" className="inline-flex items-center text-xs text-orange-600 hover:underline mt-1">
               Ver agenda <ArrowUpRight className="w-3 h-3 ml-1" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Processos Ativos
+            </CardTitle>
+            <Gavel className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.activeProcesses}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              de {stats.totalProcesses} processos totais
+            </p>
+            <Link to="/processes" className="inline-flex items-center text-xs text-orange-600 hover:underline mt-1">
+              Ver todos <ArrowUpRight className="w-3 h-3 ml-1" />
             </Link>
           </CardContent>
         </Card>

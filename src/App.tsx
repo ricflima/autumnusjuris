@@ -1,4 +1,4 @@
-// src/App.tsx - CORRIGIDO PARA FASE 3
+// src/App.tsx - ATUALIZADO PARA FASE 4
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -19,10 +19,16 @@ import Dashboard from '@/pages/dashboard/Dashboard';
 import CasesList from '@/pages/cases/CasesList';
 import CreateCase from '@/pages/cases/CreateCase';
 
-// Clients - NOVOS
+// Clients
 import ClientsList from '@/pages/clients/ClientsList';
 import CreateClient from '@/pages/clients/CreateClient';
 import ClientDetail from '@/pages/clients/ClientDetail';
+
+// Processes - NOVOS PARA FASE 4
+import ProcessesList from '@/pages/processes/ProcessesList';
+import CreateProcess from '@/pages/processes/CreateProcess';
+import ProcessDetail from '@/pages/processes/ProcessDetail';
+import ProcessCalendar from '@/pages/calendar/ProcessCalendar';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
@@ -94,7 +100,7 @@ function App() {
                 <ComingSoon 
                   title="Visualizar Caso" 
                   message="A página de detalhes do caso está em desenvolvimento"
-                  estimatedDate="Fase 4"
+                  estimatedDate="Fase 5"
                 />
               </Layout>
             </ProtectedRoute>
@@ -109,14 +115,14 @@ function App() {
                 <ComingSoon 
                   title="Editar Caso" 
                   message="A página de edição do caso está em desenvolvimento"
-                  estimatedDate="Fase 4"
+                  estimatedDate="Fase 5"
                 />
               </Layout>
             </ProtectedRoute>
           }
         />
 
-        {/* === CLIENTES === NOVOS PARA FASE 3 */}
+        {/* === CLIENTES === */}
         <Route
           path="/clients"
           element={
@@ -165,22 +171,68 @@ function App() {
           }
         />
 
-        {/* === OUTROS MÓDULOS === */}
+        {/* === PROCESSOS - NOVOS PARA FASE 4 === */}
         <Route
-          path="/calendar"
+          path="/processes"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProcessesList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/processes/create"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateProcess />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/processes/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProcessDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/processes/:id/edit"
           element={
             <ProtectedRoute>
               <Layout>
                 <ComingSoon 
-                  title="Agenda" 
-                  message="O módulo de agenda está em desenvolvimento" 
-                  estimatedDate="Fase 4"
+                  title="Editar Processo" 
+                  message="A página de edição do processo está em desenvolvimento"
+                  estimatedDate="Próxima atualização"
                 />
               </Layout>
             </ProtectedRoute>
           }
         />
 
+        {/* === CALENDÁRIO - ATUALIZADO PARA FASE 4 === */}
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProcessCalendar />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* === OUTROS MÓDULOS === */}
         <Route
           path="/financial"
           element={
