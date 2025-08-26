@@ -1,4 +1,4 @@
-// src/pages/dashboard/Dashboard.tsx - ATUALIZADO PARA FASE 3
+// src/pages/dashboard/Dashboard.tsx - VERSÃO COMPLETA CORRIGIDA PARA FASE 4
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -13,17 +13,17 @@ import {
   Search,
   ArrowUpRight,
   Building,
-  User
+  User,
+  Gavel
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { casesService } from '@/services/cases.service';
 import { clientsService } from '@/services/clients.service';
+import { processesService } from '@/services/processes.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/common/LoadingScreen';
-import { processesService } from '@/services/processes.service';
-import { Gavel } from 'lucide-react';
 import { formatCurrencyCompact, formatDate } from '@/lib/utils';
 
 export default function Dashboard() {
@@ -58,7 +58,14 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Calcular estatísticas
+  // Query para processos - MOVIDA PARA ANTES DO USO
+  const { data: processStatsData } = useQuery({
+    queryKey: ['dashboard-process-stats'],
+    queryFn: () => processesService.getProcessStatistics(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Calcular estatísticas - AGORA processStatsData JÁ ESTÁ DEFINIDA
   const stats = {
     totalCases: allCasesData?.total || 0,
     activeCases: allCasesData?.cases.filter(c => ['active', 'in_court'].includes(c.status)).length || 0,
@@ -73,92 +80,94 @@ export default function Dashboard() {
     upcomingHearings: 8 // Será implementado em fases futuras
   };
 
-  // Query para processos
-  const { data: processStatsData } = useQuery({
-    queryKey: ['dashboard-process-stats'],
-    queryFn: () => processesService.getProcessStatistics(),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const quickActions = [
     { 
       icon: FileText, 
       label: 'Novo Caso', 
       href: '/cases/new',
       color: 'bg-blue-500 hover:bg-blue-600',
-      description: 'Criar um novo caso jurídico'
     },
     { 
       icon: Users, 
       label: 'Novo Cliente', 
       href: '/clients/new',
       color: 'bg-green-500 hover:bg-green-600',
-      description: 'Cadastrar novo cliente'
+    },
+    { 
+      icon: Gavel, 
+      label: 'Novo Processo', 
+      href: '/processes/new',
+      color: 'bg-purple-500 hover:bg-purple-600',
     },
     { 
       icon: Calendar, 
-      label: 'Agendar', 
+      label: 'Ver Calendário', 
       href: '/calendar',
-      color: 'bg-purple-500 hover:bg-purple-600',
-      description: 'Agendar compromisso'
-    },
-    { 
-      icon: DollarSign, 
-      label: 'Financeiro', 
-      href: '/financial',
       color: 'bg-orange-500 hover:bg-orange-600',
-      description: 'Ver relatórios financeiros'
-    },
-    { 
-    icon: Gavel, 
-    label: 'Novo Processo', 
-    href: '/processes/create',
-    color: 'bg-orange-500 hover:bg-orange-600',
-    description: 'Cadastrar novo processo judicial'
     },
   ];
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'active': 'bg-green-100 text-green-800',
-      'prospect': 'bg-blue-100 text-blue-800',
-      'inactive': 'bg-gray-100 text-gray-800',
-      'former': 'bg-yellow-100 text-yellow-800',
-      'waiting_documents': 'bg-yellow-100 text-yellow-800',
-      'in_court': 'bg-purple-100 text-purple-800',
-      'concluded': 'bg-emerald-100 text-emerald-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
+  const recentCases = casesData?.cases || [];
+  const recentClients = clientsData?.clients || [];
+
+  // Se ainda estamos carregando dados essenciais, mostre loading
+  if (!user) {
+    return <LoadingSpinner />;
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header com boas-vindas */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Olá, {user?.name}! 👋
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bem-vindo de volta, {user.name}!
           </h1>
-          <p className="text-gray-600 mt-1">
-            Aqui está um resumo das suas atividades jurídicas hoje.
+          <p className="text-gray-600">
+            Aqui está um resumo das suas atividades jurídicas
           </p>
         </div>
         
-        {/* Barra de pesquisa global */}
-        <div className="relative max-w-md w-full">
+        {/* Search bar */}
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
-            type="text"
-            placeholder="Pesquisar casos, clientes..."
+            placeholder="Buscar casos, clientes, processos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full md:w-80"
           />
         </div>
       </div>
 
-      {/* Cards de estatísticas principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              to={action.href}
+              className="group"
+            >
+              <Card className="border-2 border-transparent hover:border-gray-200 transition-all duration-200 hover:shadow-md">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className={`p-2 rounded-lg ${action.color} text-white group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium text-gray-900 group-hover:text-gray-700">
+                    {action.label}
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
+        {/* Total Cases */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
@@ -177,6 +186,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Active Clients */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
@@ -250,6 +260,24 @@ export default function Dashboard() {
             </Link>
           </CardContent>
         </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Prazos Vencidos
+            </CardTitle>
+            <Clock className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.overdueDeadlines}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Requer atenção urgente
+            </p>
+            <Link to="/processes" className="inline-flex items-center text-xs text-red-600 hover:underline mt-1">
+              Ver prazos <ArrowUpRight className="w-3 h-3 ml-1" />
+            </Link>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Ações rápidas */}
@@ -262,165 +290,193 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action) => {
-              const IconComponent = action.icon;
-              return (
-                <Link key={action.href} to={action.href}>
-                  <div className="group p-6 border rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer hover:border-gray-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-full ${action.color} text-white transition-colors`}>
-                        <IconComponent className="w-5 h-5" />
-                      </div>
-                      <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {action.label}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {action.description}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
+            <Link
+              to="/cases/new"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                <Plus className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Novo Caso</h4>
+                <p className="text-xs text-gray-500">Cadastrar novo caso</p>
+              </div>
+            </Link>
+
+            <Link
+              to="/clients/new"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                <Plus className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Novo Cliente</h4>
+                <p className="text-xs text-gray-500">Cadastrar cliente</p>
+              </div>
+            </Link>
+
+            <Link
+              to="/processes/new"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <Plus className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Novo Processo</h4>
+                <p className="text-xs text-gray-500">Cadastrar processo</p>
+              </div>
+            </Link>
+
+            <Link
+              to="/calendar"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                <Calendar className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Ver Agenda</h4>
+                <p className="text-xs text-gray-500">Compromissos e prazos</p>
+              </div>
+            </Link>
           </div>
         </CardContent>
       </Card>
 
-      {/* Grid principal com duas colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Casos recentes */}
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Recent Cases */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                Casos Recentes
-              </CardTitle>
-              <Link to="/cases">
-                <Button variant="outline" size="sm">
-                  Ver todos
-                </Button>
-              </Link>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-semibold">Casos Recentes</CardTitle>
+            <Link to="/cases">
+              <Button variant="ghost" size="sm">
+                Ver todos
+                <ArrowUpRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent>
-            {!casesData ? (
-              <div className="text-center py-4">
-                <LoadingSpinner message="Carregando casos..." />
-              </div>
-            ) : casesData.cases.length > 0 ? (
-              <div className="space-y-4">
-                {casesData.cases.map((case_) => (
-                  <Link key={case_.id} to={`/cases/${case_.id}`}>
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 text-sm line-clamp-1">
-                          {case_.title}
-                        </h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(case_.status)} ml-2 whitespace-nowrap`}>
-                          {casesService.getStatusLabel(case_.status)}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <div className="flex items-center gap-1">
-                            {case_.clientType === 'company' ? (
-                              <Building className="w-3 h-3" />
-                            ) : (
-                              <User className="w-3 h-3" />
-                            )}
-                            <span className="font-medium">{case_.clientName}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>Atualizado: {formatDate(case_.lastUpdate)}</span>
-                          <span className={`font-medium ${casesService.getPriorityColor(case_.priority)}`}>
-                            {casesService.getPriorityLabel(case_.priority)}
-                          </span>
-                        </div>
-                      </div>
+          <CardContent className="space-y-4">
+            {recentCases.length > 0 ? (
+              recentCases.map((case_) => (
+                <div
+                  key={case_.id}
+                  className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate">
+                      {case_.title}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-500">
+                        {case_.client?.name || 'Cliente não informado'}
+                      </span>
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(case_.updatedAt)}
+                      </span>
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className={`
+                      px-2 py-1 text-xs font-medium rounded-full
+                      ${case_.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        case_.status === 'in_court' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-gray-100 text-gray-800'}
+                    `}>
+                      {case_.status === 'active' ? 'Ativo' : 
+                       case_.status === 'in_court' ? 'Em Tribunal' : 
+                       case_.status}
+                    </span>
+                    <Button variant="ghost" size="sm">
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
             ) : (
-              <div className="text-center py-6 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                 <p>Nenhum caso encontrado</p>
-                <Link to="/cases/new" className="text-blue-600 hover:underline text-sm">
-                  Criar primeiro caso
+                <Link to="/cases/new">
+                  <Button className="mt-2" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar primeiro caso
+                  </Button>
                 </Link>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Clientes recentes */}
+        {/* Recent Clients */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-green-600" />
-                Clientes Recentes
-              </CardTitle>
-              <Link to="/clients">
-                <Button variant="outline" size="sm">
-                  Ver todos
-                </Button>
-              </Link>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-semibold">Clientes Recentes</CardTitle>
+            <Link to="/clients">
+              <Button variant="ghost" size="sm">
+                Ver todos
+                <ArrowUpRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent>
-            {!clientsData ? (
-              <div className="text-center py-4">
-                <LoadingSpinner message="Carregando clientes..." />
-              </div>
-            ) : clientsData.clients.length > 0 ? (
-              <div className="space-y-4">
-                {clientsData.clients.map((client) => (
-                  <Link key={client.id} to={`/clients/${client.id}`}>
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          {client.type === 'company' ? (
-                            <Building className="w-5 h-5 text-white" />
+          <CardContent className="space-y-4">
+            {recentClients.length > 0 ? (
+              recentClients.map((client) => (
+                <div
+                  key={client.id}
+                  className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {client.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 truncate">
+                        {client.name}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1">
+                          {client.type === 'individual' ? (
+                            <User className="w-3 h-3 text-gray-400" />
                           ) : (
-                            <User className="w-5 h-5 text-white" />
+                            <Building className="w-3 h-3 text-gray-400" />
                           )}
+                          <span className="text-xs text-gray-500">
+                            {client.type === 'individual' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                          </span>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-medium text-gray-900 text-sm truncate">
-                              {client.name}
-                            </h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${clientsService.getStatusColor(client.status)} ml-2 whitespace-nowrap`}>
-                              {clientsService.getStatusLabel(client.status)}
-                            </span>
-                          </div>
-                          
-                          <div className="space-y-1 text-xs text-gray-600">
-                            <p>{client.email}</p>
-                            <div className="flex items-center justify-between">
-                              <span>{client.address.city}, {client.address.state}</span>
-                              <span className="font-medium text-green-600">
-                                {client.activeCases} casos ativos
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                        <span className="text-xs text-gray-300">•</span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(client.createdAt)}
+                        </span>
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`
+                      px-2 py-1 text-xs font-medium rounded-full
+                      ${client.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        client.status === 'prospect' ? 'bg-yellow-100 text-yellow-800' : 
+                        'bg-gray-100 text-gray-800'}
+                    `}>
+                      {client.status === 'active' ? 'Ativo' : 
+                       client.status === 'prospect' ? 'Prospect' : 
+                       client.status}
+                    </span>
+                    <Button variant="ghost" size="sm">
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
             ) : (
-              <div className="text-center py-6 text-gray-500">
-                <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+              <div className="text-center py-8 text-gray-500">
+                <Users className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                 <p>Nenhum cliente encontrado</p>
-                <Link to="/clients/new" className="text-green-600 hover:underline text-sm">
+                <Link to="/clients/new" className="inline-flex items-center text-blue-600 hover:underline text-sm">
                   Cadastrar primeiro cliente
                 </Link>
               </div>
