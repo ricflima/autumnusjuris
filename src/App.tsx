@@ -1,4 +1,4 @@
-// src/App.tsx - ATUALIZADO PARA FASE 4
+// src/App.tsx - ATUALIZADO PARA FASE 5 COM CORREÇÃO DE ROTAS
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -25,14 +25,14 @@ import ClientsList from '@/pages/clients/ClientsList';
 import CreateClient from '@/pages/clients/CreateClient';
 import ClientDetail from '@/pages/clients/ClientDetail';
 
-// Processes - NOVOS PARA FASE 4
+// Processes - FASE 4
 import ProcessesList from '@/pages/processes/ProcessesList';
 import CreateProcess from '@/pages/processes/CreateProcess';
 import ProcessDetail from '@/pages/processes/ProcessDetail';
 import ProcessCalendar from '@/pages/calendar/ProcessCalendar';
 import EditProcess from '@/pages/processes/EditProcess';
 
-// Documents
+// Documents - FASE 5
 import DocumentsList from '@/pages/documents/DocumentsList';
 import DocumentUpload from '@/pages/documents/DocumentUpload';
 import DocumentViewer from '@/pages/documents/DocumentViewer';
@@ -175,7 +175,7 @@ function App() {
           }
         />
 
-        {/* === PROCESSOS - NOVOS PARA FASE 4 === */}
+        {/* === PROCESSOS - FASE 4 === */}
         <Route
           path="/processes"
           element={
@@ -220,7 +220,7 @@ function App() {
           }
         />
 
-        {/* === CALENDÁRIO - ATUALIZADO PARA FASE 4 === */}
+        {/* === CALENDÁRIO - FASE 4 === */}
         <Route
           path="/calendar"
           element={
@@ -232,13 +232,80 @@ function App() {
           }
         />
 
-        {/* === DOCUMENTOS - NOVOS PARA FASE 5 === */}
-        <Route path="documents" element={<DocumentsList />} />
-        <Route path="documents/upload" element={<DocumentUpload />} />
-        <Route path="documents/templates" element={<TemplateLibrary />} />
-        <Route path="documents/:id/view" element={<DocumentViewer />} />
-        <Route path="documents/:id/edit" element={<Navigate to="/documents" replace />} />
-        <Route path="documents/shared" element={<Navigate to="/documents" replace />} />
+        {/* === DOCUMENTOS - FASE 5 (CORRIGIDO) === */}
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentsList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/documents/upload"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentUpload />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/documents/templates"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TemplateLibrary />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/documents/:id/view"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentViewer />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/documents/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon 
+                  title="Editar Documento" 
+                  message="A página de edição de documento está em desenvolvimento"
+                  estimatedDate="Em breve"
+                />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/documents/shared"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon 
+                  title="Documentos Compartilhados" 
+                  message="A página de documentos compartilhados está em desenvolvimento"
+                  estimatedDate="Em breve"
+                />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* === OUTROS MÓDULOS === */}
         <Route
