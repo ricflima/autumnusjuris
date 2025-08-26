@@ -32,6 +32,7 @@ const navigation = [
   { name: 'Casos', href: '/cases', icon: FileText },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Processos', href: '/processes', icon: Gavel },
+  { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Calendário', href: '/calendar', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },
   { name: 'Configurações', href: '/settings', icon: Settings },

@@ -32,6 +32,12 @@ import ProcessDetail from '@/pages/processes/ProcessDetail';
 import ProcessCalendar from '@/pages/calendar/ProcessCalendar';
 import EditProcess from '@/pages/processes/EditProcess';
 
+// Documents
+import DocumentsList from '@/pages/documents/DocumentsList';
+import DocumentUpload from '@/pages/documents/DocumentUpload';
+import DocumentViewer from '@/pages/documents/DocumentViewer';
+import TemplateLibrary from '@/pages/documents/TemplateLibrary';
+
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
@@ -225,6 +231,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* === DOCUMENTOS - NOVOS PARA FASE 5 === */}
+        <Route path="documents" element={<DocumentsList />} />
+        <Route path="documents/upload" element={<DocumentUpload />} />
+        <Route path="documents/templates" element={<TemplateLibrary />} />
+        <Route path="documents/:id/view" element={<DocumentViewer />} />
+        <Route path="documents/:id/edit" element={<Navigate to="/documents" replace />} />
+        <Route path="documents/shared" element={<Navigate to="/documents" replace />} />
 
         {/* === OUTROS MÓDULOS === */}
         <Route

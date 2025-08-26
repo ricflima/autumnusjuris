@@ -1,5 +1,8 @@
 // src/lib/utils.ts
 
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
 export const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('pt-BR');
 };
@@ -77,9 +80,9 @@ export const getDaysUntil = (dateString: string): number => {
 };
 
 // Função para classificar CSS baseado no status
-export const cn = (...classes: (string | undefined | null | false)[]): string => {
-  return classes.filter(Boolean).join(' ');
-};
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}
 
 // ADICIONAR no final do arquivo utils.ts:
 export const formatCurrencyCompactDashboard = (value: number): string => {
@@ -90,3 +93,4 @@ export const formatCurrencyCompactDashboard = (value: number): string => {
     maximumFractionDigits: 0,
   }).format(value);
 };
+
