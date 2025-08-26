@@ -39,7 +39,6 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { DocumentFilters, Document, DocumentFolder, DocumentVersion } from '@/types/documents';
 
 import { useDocument, useDeleteDocument, useProcessOcr } from '@/hooks/useDocuments';
 import { documentsService } from '@/services/documents.service';
@@ -453,9 +452,9 @@ export default function DocumentViewer() {
                     <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                     <div>
                       <div>Criado em {formatDate(document.createdAt)}</div>
-                      {document.updatedAt && document.updatedAt !== document.createdAt && (
+                      {document.updatedAt !== document.createdAt && (
                         <div className="text-gray-500">
-                          Modificado em {formatDate(document.updatedAt)}
+                          Modificado em {formatDate(document.updatedAt ?? "")}
                         </div>
                       )}
                     </div>

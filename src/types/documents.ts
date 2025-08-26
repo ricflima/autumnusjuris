@@ -152,10 +152,7 @@ export interface DocumentAnnotation {
   updatedAt?: string;
 }
 
-/**
- * Renomeado de Document → AppDocument
- */
-export interface AppDocument {
+export interface Document {
   id: string;
   fileName: string;
   originalFileName: string;
@@ -272,7 +269,7 @@ export interface UpdateDocumentRequest {
 }
 
 export interface DocumentsResponse {
-  documents: AppDocument[];
+  documents: Document[];
   total: number;
   page: number;
   limit: number;
