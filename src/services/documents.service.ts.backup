@@ -534,17 +534,9 @@ class DocumentsService {
         throw new Error('Documento não encontrado');
       }
       
-      const currentDoc = MOCK_DOCUMENTS[documentIndex];
-
-      const updatedDocument: Document = {
-        ...currentDoc,
+      const updatedDocument = {
+        ...MOCK_DOCUMENTS[documentIndex],
         ...data,
-        title: data.title || currentDoc.title || 'Sem título',
-        metadata: {
-          ...currentDoc.metadata,
-          title: data.title || data.metadata?.title || currentDoc.title || 'Sem título',
-          ...data.metadata
-        },
         updatedBy: 'current-user',
         updatedAt: new Date().toISOString()
       };

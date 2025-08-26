@@ -28,6 +28,10 @@ export interface Case {
   priority: CasePriority;
   clientId: string;
   clientName: string;
+  clientType?: 'individual' | 'company'; // NOVO
+  clientDocument?: string; // NOVO
+  clientEmail?: string; // NOVO
+  clientPhone?: string; // NOVO
   lawyerId: string;
   lawyerName: string;
   processNumber?: string;
@@ -43,6 +47,9 @@ export interface Case {
   timeline: CaseTimelineItem[];
   createdAt: string;
   updatedAt: string;
+  // NOVOS CAMPOS DE RELACIONAMENTO
+  relatedCases?: string[]; // IDs de casos relacionados
+  tags?: string[]; // Tags para categorização
 }
 
 export interface CaseDocument {
@@ -119,11 +126,15 @@ const MOCK_CASES: Case[] = [
   {
     id: '1',
     title: 'Processo Trabalhista - Silva vs Empresa XYZ',
-    description: 'Ação trabalhista por horas extras não pagas e rescisão indevida.',
+    description: 'Ação trabalhista por horas extras não pagas e rescisão indevida. Cliente trabalhou por 3 anos sem receber adequadamente.',
     status: 'active',
     priority: 'high',
     clientId: '1',
     clientName: 'João Silva',
+    clientType: 'individual',
+    clientDocument: '123.456.789-00',
+    clientEmail: 'joao.silva@email.com',
+    clientPhone: '(11) 99999-9999',
     lawyerId: '1',
     lawyerName: 'Dr. João Silva',
     processNumber: '1001234-56.2024.5.02.0001',
@@ -155,17 +166,22 @@ const MOCK_CASES: Case[] = [
         user: 'Dr. João Silva'
       }
     ],
+    tags: ['trabalhista', 'horas-extras'],
     createdAt: '2024-01-15T10:00:00Z',
     updatedAt: '2024-03-10T14:30:00Z'
   },
   {
     id: '2',
     title: 'Divórcio Consensual - Maria Santos',
-    description: 'Procedimento de divórcio consensual com partilha de bens.',
+    description: 'Procedimento de divórcio consensual com partilha de bens. Casal sem filhos menores.',
     status: 'waiting_documents',
     priority: 'medium',
     clientId: '2',
     clientName: 'Maria Santos',
+    clientType: 'individual',
+    clientDocument: '987.654.321-00',
+    clientEmail: 'maria.santos@email.com',
+    clientPhone: '(11) 88888-8888',
     lawyerId: '2',
     lawyerName: 'Dra. Maria Santos',
     processNumber: '2001234-56.2024.8.26.0001',
@@ -188,17 +204,22 @@ const MOCK_CASES: Case[] = [
         user: 'Dra. Maria Santos'
       }
     ],
+    tags: ['divórcio', 'família'],
     createdAt: '2024-02-01T10:00:00Z',
     updatedAt: '2024-03-09T09:15:00Z'
   },
   {
     id: '3',
     title: 'Ação de Cobrança - Contrato Comercial',
-    description: 'Cobrança de valores em aberto referente ao contrato comercial.',
+    description: 'Cobrança de valores em aberto referente ao contrato comercial com fornecedor.',
     status: 'appealing',
     priority: 'low',
     clientId: '3',
     clientName: 'Empresa ABC Ltda',
+    clientType: 'company',
+    clientDocument: '12.345.678/0001-90',
+    clientEmail: 'contato@empresaabc.com',
+    clientPhone: '(11) 3333-3333',
     lawyerId: '1',
     lawyerName: 'Dr. João Silva',
     processNumber: '3001234-56.2024.8.26.0100',
@@ -230,8 +251,47 @@ const MOCK_CASES: Case[] = [
         user: 'Dr. João Silva'
       }
     ],
+    tags: ['cobrança', 'comercial'],
     createdAt: '2024-01-10T14:00:00Z',
     updatedAt: '2024-03-07T16:20:00Z'
+  },
+  {
+    id: '4',
+    title: 'Revisão de Contrato - Empresa ABC',
+    description: 'Análise e revisão de contratos de fornecimento para adequação à nova legislação.',
+    status: 'active',
+    priority: 'medium',
+    clientId: '3',
+    clientName: 'Empresa ABC Ltda',
+    clientType: 'company',
+    clientDocument: '12.345.678/0001-90',
+    clientEmail: 'contato@empresaabc.com',
+    clientPhone: '(11) 3333-3333',
+    lawyerId: '1',
+    lawyerName: 'Dr. João Silva',
+    court: '',
+    subject: 'Direito Empresarial',
+    value: 15000,
+    startDate: '2024-03-01T00:00:00Z',
+    expectedEndDate: '2024-04-30T00:00:00Z',
+    lastUpdate: '2024-03-11T10:00:00Z',
+    nextAction: 'Reunião para apresentar alterações sugeridas',
+    nextActionDate: '2024-03-15T15:00:00Z',
+    documents: [],
+    timeline: [
+      {
+        id: '4',
+        title: 'Caso criado',
+        description: 'Revisão contratual solicitada',
+        date: '2024-03-01T10:00:00Z',
+        type: 'created',
+        user: 'Dr. João Silva'
+      }
+    ],
+    tags: ['contratos', 'empresarial'],
+    relatedCases: ['3'], // Relacionado ao caso de cobrança da mesma empresa
+    createdAt: '2024-03-01T10:00:00Z',
+    updatedAt: '2024-03-11T10:00:00Z'
   }
 ];
 
@@ -274,13 +334,13 @@ class CasesService {
         const sortOrder = filters.sortOrder || 'desc';
         
         filteredCases.sort((a, b) => {
-          let aVal = a[sortBy];
-          let bVal = b[sortBy];
+          let aVal: any = a[sortBy];
+          let bVal: any = b[sortBy];
           
           if (sortBy === 'priority') {
             const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-            aVal = priorityOrder[a.priority];
-            bVal = priorityOrder[b.priority];
+            aVal = priorityOrder[a.priority as keyof typeof priorityOrder];
+            bVal = priorityOrder[b.priority as keyof typeof priorityOrder];
           }
           
           if (sortOrder === 'asc') {
@@ -450,6 +510,70 @@ class CasesService {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Erro ao adicionar anotação');
+    }
+  }
+  // Adicionar método para buscar casos por cliente (adicionar na classe CasesService):
+  async getCasesByClient(clientId: string): Promise<Case[]> {
+  try {
+    if (import.meta.env.VITE_MOCK_API !== 'false') {
+      await simulateDelay(500);
+      
+      return MOCK_CASES.filter(c => c.clientId === clientId)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }
+    
+      const response = await api.get(`/cases?clientId=${clientId}`);
+      return response.data.cases || [];
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Erro ao buscar casos do cliente');
+    }
+  }
+
+  // Adicionar método para vincular caso ao cliente:
+  async linkCaseToClient(caseId: string, clientId: string): Promise<void> {
+    try {
+      if (import.meta.env.VITE_MOCK_API !== 'false') {
+        await simulateDelay(500);
+      
+        const caseIndex = MOCK_CASES.findIndex(c => c.id === caseId);
+        if (caseIndex !== -1) {
+          MOCK_CASES[caseIndex].clientId = clientId;
+          MOCK_CASES[caseIndex].updatedAt = new Date().toISOString();
+        }
+        return;
+      }
+    
+      await api.put(`/cases/${caseId}/link-client`, { clientId });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Erro ao vincular caso ao cliente');
+    }
+  }
+
+  // Adicionar método para obter estatísticas do relacionamento cliente-caso:
+  async getClientCaseStats(clientId: string): Promise<{
+    totalCases: number;
+    activeCases: number;
+   concludedCases: number;
+    totalValue: number;
+  }> {
+    try {
+      if (import.meta.env.VITE_MOCK_API !== 'false') {
+        await simulateDelay(300);
+      
+        const clientCases = MOCK_CASES.filter(c => c.clientId === clientId);
+      
+        return {
+          totalCases: clientCases.length,
+          activeCases: clientCases.filter(c => ['active', 'in_court'].includes(c.status)).length,
+          concludedCases: clientCases.filter(c => c.status === 'concluded').length,
+          totalValue: clientCases.reduce((sum, c) => sum + (c.value || 0), 0)
+        };
+      }
+    
+      const response = await api.get(`/clients/${clientId}/case-stats`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Erro ao obter estatísticas');
     }
   }
   
