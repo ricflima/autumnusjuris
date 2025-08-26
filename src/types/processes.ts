@@ -20,7 +20,11 @@ export type ProcessType =
   | 'labor' 
   | 'tax' 
   | 'family' 
-  | 'administrative';
+  | 'administrative'
+  | 'commercial'
+  | 'consumer'
+  | 'environmental'
+  | 'constitutional';
 
 export type ProcessPriority = 
   | 'low' 
@@ -81,6 +85,13 @@ export interface ProcessDeadline {
   attachments?: string[];
   createdAt: string;
   updatedAt: string;
+  isOverdue?: boolean;
+  daysUntilDue?: number;
+  daysOverdue?: number;
+  formattedDueDate?: string;
+  daysUntilDueFormatted?: string;
+  daysOverdueFormatted?: string;
+  
 }
 
 export interface ProcessHearing {
@@ -288,6 +299,10 @@ export const PROCESS_TYPE_LABELS: Record<ProcessType, string> = {
   tax: 'Tributário',
   family: 'Família',
   administrative: 'Administrativo',
+  commercial: 'Comercial',
+  consumer: 'Consumidor',
+  environmental: 'Ambiental',
+  constitutional: 'Constitucional',    
 };
 
 export const DEADLINE_TYPE_LABELS: Record<DeadlineType, string> = {

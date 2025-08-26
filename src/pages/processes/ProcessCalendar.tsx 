@@ -1,0 +1,503 @@
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Calendar, ChevronLeft, ChevronRight, Clock, AlertCircle, 
+  Plus, Filter, Users, MapPin, FileText, Bell
+} from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+
+import { processDeadlinesService } from '@/services/processDeadlines.service';
+import { processesService } from '@/services/processes.service';
+
+const MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  type: 'deadline' | 'hearing';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: string;
+  processId: string;
+  processTitle?: string;
+  location?: string;
+  isOverdue?: boolean;
+}
+
+export default function ProcessCalendar() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewType, setViewType] = useState<'month' | 'week'>('month');
+  const [filterType, setFilterType] = useState<'all' | 'deadlines' | 'hearings'>('all');
+
+  // Buscar prazos
+  const { data: deadlinesData, isLoading: deadlinesLoading } = useQuery({
+    queryKey: ['deadlines', currentDate.getMonth(), currentDate.getFullYear()],
+    queryFn: () => {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      return processDeadlinesService.getDeadlines({
+        dueFromDate: startOfMonth.toISOString(),
+        dueToDate: endOfMonth.toISOString(),
+        limit: 100
+      });
+    }
+  });
+
+  // Buscar audiências
+  const { data: hearingsData, isLoading: hearingsLoading } = useQuery({
+    queryKey: ['hearings', currentDate.getMonth(), currentDate.getFullYear()],
+    queryFn: () => {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      return processDeadlinesService.getHearings({
+        fromDate: startOfMonth.toISOString(),
+        toDate: endOfMonth.toISOString(),
+        limit: 100
+      });
+    }
+  });
+
+  // Buscar próximos prazos (sidebar)
+  const { data: upcomingDeadlines } = useQuery({
+    queryKey: ['upcoming-deadlines'],
+    queryFn: () => processDeadlinesService.getUpcomingDeadlines(30)
+  });
+
+  // Buscar prazos em atraso
+  const { data: overdueDeadlines } = useQuery({
+    queryKey: ['overdue-deadlines'],
+    queryFn: () => processDeadlinesService.getOverdueDeadlines()
+  });
+
+  // Combinar eventos do calendário
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const events: CalendarEvent[] = [];
+
+    // Adicionar prazos
+    if (deadlinesData?.deadlines) {
+      deadlinesData.deadlines.forEach(deadline => {
+        if (filterType === 'all' || filterType === 'deadlines') {
+          // Calcular se está em atraso
+          const isOverdue = new Date(deadline.dueDate) < new Date() && deadline.status !== 'completed';
+          
+          events.push({
+            id: `deadline-${deadline.id}`,
+            title: deadline.title,
+            date: deadline.dueDate.split('T')[0],
+            time: deadline.dueDate.split('T')[1]?.substr(0, 5),
+            type: 'deadline',
+            priority: deadline.priority,
+            status: deadline.status,
+            processId: deadline.processId,
+            isOverdue: isOverdue
+          });
+        }
+      });
+    }
+
+    // Adicionar audiências
+    if (hearingsData?.hearings) {
+      hearingsData.hearings.forEach(hearing => {
+        if (filterType === 'all' || filterType === 'hearings') {
+          events.push({
+            id: `hearing-${hearing.id}`,
+            title: hearing.title,
+            date: hearing.date,
+            time: hearing.time,
+            type: 'hearing',
+            priority: 'medium', // Audiências têm prioridade média por padrão
+            status: hearing.status,
+            processId: hearing.processId,
+            location: hearing.location
+          });
+        }
+      });
+    }
+
+    // Ordenar eventos por horário
+    return events.sort((a, b) => {
+      if (a.time && b.time) {
+        return a.time.localeCompare(b.time);
+      }
+      return 0;
+    });
+  }, [deadlinesData, hearingsData, filterType]);
+
+  // Gerar dias do calendário
+  const calendarDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    const current = new Date(startDate);
+    
+    for (let i = 0; i < 42; i++) {
+      const dayEvents = calendarEvents.filter(event => 
+        event.date === current.toISOString().split('T')[0]
+      );
+      
+      days.push({
+        date: new Date(current),
+        isCurrentMonth: current.getMonth() === month,
+        isToday: current.toDateString() === new Date().toDateString(),
+        events: dayEvents
+      });
+      
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return days;
+  }, [currentDate, calendarEvents]);
+
+  // Eventos do dia selecionado
+  const selectedDayEvents = selectedDate
+    ? calendarEvents.filter(event => 
+        event.date === selectedDate.toISOString().split('T')[0]
+      )
+    : [];
+
+  const isLoading = deadlinesLoading || hearingsLoading;
+
+  const goToPreviousMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const getEventColor = (event: CalendarEvent) => {
+    if (event.type === 'deadline') {
+      if (event.isOverdue) return 'bg-red-500';
+      if (event.priority === 'urgent') return 'bg-red-400';
+      if (event.priority === 'high') return 'bg-orange-400';
+      if (event.priority === 'medium') return 'bg-yellow-400';
+      return 'bg-blue-400';
+    } else {
+      return 'bg-purple-400';
+    }
+  };
+
+  const getEventTextColor = (event: CalendarEvent) => {
+    return 'text-white text-xs';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Calendar className="h-8 w-8 text-blue-600" />
+                Calendário de Processos
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Prazos e audiências dos seus processos
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={goToToday}
+                className="flex items-center gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                Hoje
+              </Button>
+
+              <div className="flex items-center border rounded-lg">
+                <Button
+                  variant={filterType === 'all' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilterType('all')}
+                  className="rounded-r-none"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={filterType === 'deadlines' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilterType('deadlines')}
+                  className="rounded-none"
+                >
+                  Prazos
+                </Button>
+                <Button
+                  variant={filterType === 'hearings' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilterType('hearings')}
+                  className="rounded-l-none"
+                >
+                  Audiências
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Calendário Principal */}
+          <div className="lg:col-span-3">
+            <Card className="p-6">
+              {/* Controles do calendário */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousMonth}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <h2 className="text-xl font-semibold">
+                    {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </h2>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextMonth}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {isLoading && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                )}
+              </div>
+
+              {/* Grade do calendário */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Cabeçalho dos dias da semana */}
+                {WEEKDAYS.map(day => (
+                  <div
+                    key={day}
+                    className="p-2 text-center text-sm font-medium text-gray-500 bg-gray-50"
+                  >
+                    {day}
+                  </div>
+                ))}
+
+                {/* Dias do calendário */}
+                {calendarDays.map((day, index) => (
+                  <div
+                    key={index}
+                    className={`
+                      min-h-[100px] p-1 border border-gray-200 cursor-pointer hover:bg-gray-50
+                      ${!day.isCurrentMonth ? 'bg-gray-100' : 'bg-white'}
+                      ${day.isToday ? 'ring-2 ring-blue-500' : ''}
+                      ${selectedDate?.toDateString() === day.date.toDateString() ? 'bg-blue-50' : ''}
+                    `}
+                    onClick={() => setSelectedDate(day.date)}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className={`
+                        text-sm font-medium
+                        ${!day.isCurrentMonth ? 'text-gray-400' : 'text-gray-900'}
+                        ${day.isToday ? 'text-blue-600 font-bold' : ''}
+                      `}>
+                        {day.date.getDate()}
+                      </span>
+                      
+                      {day.events.length > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {day.events.length}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Eventos do dia */}
+                    <div className="space-y-1">
+                      {day.events.slice(0, 3).map(event => (
+                        <div
+                          key={event.id}
+                          className={`
+                            px-1 py-0.5 rounded text-xs truncate
+                            ${getEventColor(event)} ${getEventTextColor(event)}
+                          `}
+                          title={`${event.title} ${event.time ? `- ${event.time}` : ''}`}
+                        >
+                          {event.time && <span className="font-bold">{event.time}</span>}
+                          {event.title}
+                        </div>
+                      ))}
+                      
+                      {day.events.length > 3 && (
+                        <div className="text-xs text-gray-500 text-center">
+                          +{day.events.length - 3} mais
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Eventos do dia selecionado */}
+            {selectedDate && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">
+                  {selectedDate.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long'
+                  })}
+                </h3>
+
+                {selectedDayEvents.length === 0 ? (
+                  <p className="text-gray-500 text-sm">
+                    Nenhum evento neste dia
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedDayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className="p-3 rounded-lg border bg-white hover:bg-gray-50 cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-medium text-sm">{event.title}</h4>
+                          <Badge className={processDeadlinesService.getPriorityColor(event.priority)}>
+                            {event.priority}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {event.time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {event.time}
+                            </span>
+                          )}
+                          
+                          {event.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {event.location}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {event.type === 'deadline' ? 'Prazo' : 'Audiência'}
+                          </Badge>
+                          
+                          {event.isOverdue && (
+                            <Badge className="bg-red-100 text-red-800 text-xs">
+                              Em atraso
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Prazos em atraso */}
+            {overdueDeadlines && overdueDeadlines.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Prazos em Atraso ({overdueDeadlines.length})
+                </h3>
+                
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {overdueDeadlines.slice(0, 5).map(deadline => (
+                    <div
+                      key={deadline.id}
+                      className="p-2 rounded bg-red-50 border border-red-200"
+                    >
+                      <h4 className="font-medium text-sm text-red-900">
+                        {deadline.title}
+                      </h4>
+                      <p className="text-xs text-red-600">
+                        {processDeadlinesService.formatDaysUntilDue(deadline.daysUntilDue)}
+                      </p>
+                    </div>
+                  ))}
+                  
+                  {overdueDeadlines.length > 5 && (
+                    <p className="text-xs text-center text-gray-500">
+                      +{overdueDeadlines.length - 5} prazos em atraso
+                    </p>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Próximos prazos */}
+            {upcomingDeadlines && upcomingDeadlines.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-blue-600" />
+                  Próximos Prazos
+                </h3>
+                
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {upcomingDeadlines.slice(0, 5).map(deadline => (
+                    <div
+                      key={deadline.id}
+                      className="p-2 rounded bg-blue-50 border border-blue-200"
+                    >
+                      <h4 className="font-medium text-sm text-blue-900">
+                        {deadline.title}
+                      </h4>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-xs text-blue-600">
+                          {processDeadlinesService.formatDaysUntilDue(deadline.daysUntilDue)}
+                        </p>
+                        <Badge className={processDeadlinesService.getPriorityColor(deadline.priority)}>
+                          {deadline.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {upcomingDeadlines.length > 5 && (
+                    <p className="text-xs text-center text-gray-500">
+                      +{upcomingDeadlines.length - 5} próximos prazos
+                    </p>
+                  )}
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

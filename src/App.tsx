@@ -18,6 +18,7 @@ import Dashboard from '@/pages/dashboard/Dashboard';
 // Cases
 import CasesList from '@/pages/cases/CasesList';
 import CreateCase from '@/pages/cases/CreateCase';
+import EditCase from '@/pages/cases/EditCase';
 
 // Clients
 import ClientsList from '@/pages/clients/ClientsList';
@@ -29,6 +30,7 @@ import ProcessesList from '@/pages/processes/ProcessesList';
 import CreateProcess from '@/pages/processes/CreateProcess';
 import ProcessDetail from '@/pages/processes/ProcessDetail';
 import ProcessCalendar from '@/pages/calendar/ProcessCalendar';
+import EditProcess from '@/pages/processes/EditProcess';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
@@ -112,11 +114,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Editar Caso" 
-                  message="A página de edição do caso está em desenvolvimento"
-                  estimatedDate="Fase 5"
-                />
+                <EditCase />
               </Layout>
             </ProtectedRoute>
           }
@@ -210,11 +208,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Editar Processo" 
-                  message="A página de edição do processo está em desenvolvimento"
-                  estimatedDate="Próxima atualização"
-                />
+                <EditProcess />
               </Layout>
             </ProtectedRoute>
           }
