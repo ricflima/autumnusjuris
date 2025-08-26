@@ -63,8 +63,8 @@ export interface DocumentVersion {
   fileUrl: string;
   uploadedBy: string;
   uploadedAt: string;
-  changes?: string;
   isActive: boolean;
+  changes?: string;
 }
 
 export interface DocumentAccess {
@@ -89,7 +89,7 @@ export interface DocumentFolder {
   createdAt: string;
   updatedAt: string;
   isSystemFolder: boolean;
-  permissions: DocumentAccess[];
+  permissions: any[];
 }
 
 export interface DocumentMetadata {
