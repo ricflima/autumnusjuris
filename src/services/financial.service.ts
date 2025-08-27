@@ -371,10 +371,30 @@ class FinancialService {
     };
   }
   
-  async getInvoiceById(id: string): Promise<Invoice | null> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_INVOICES.find(invoice => invoice.id === id) || null;
-  }
+  // src/services/financial.service.ts - Método getInvoiceById CORRIGIDO
+
+    async getInvoiceById(id: string): Promise<Invoice> {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const invoice = MOCK_INVOICES.find(invoice => invoice.id === id);
+      if (!invoice) {
+        throw new Error('Fatura não encontrada');
+      }
+      
+      // Calcular campos dinâmicos de forma segura
+      const now = new Date();
+      const dueDate = new Date(invoice.dueDate);
+      const isOverdue = now > dueDate && !invoice.isPaid;
+      const daysOverdue = isOverdue ? Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      
+      return {
+        ...invoice,
+        isOverdue,
+        daysOverdue,
+        paidAmount: invoice.paidAmount || 0,
+        remainingAmount: invoice.totalAmount - (invoice.paidAmount || 0)
+      };
+    }
   
   async createInvoice(data: CreateInvoiceRequest): Promise<Invoice> {
     await new Promise(resolve => setTimeout(resolve, 500));

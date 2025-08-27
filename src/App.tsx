@@ -47,6 +47,8 @@ import CreatePayment from '@/pages/financial/CreatePayment';
 import ExpensesList from '@/pages/financial/ExpensesList';
 import CreateExpense from '@/pages/financial/CreateExpense';
 import FinancialReports from '@/pages/financial/FinancialReports';
+import EditInvoice from '@/pages/financial/EditInvoice';
+import ViewInvoice from '@/pages/financial/ViewInvoice';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
@@ -327,11 +329,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Visualizar Fatura" 
-                  message="A página de visualização da fatura está em desenvolvimento"
-                  estimatedDate="Próxima atualização"
-                />
+                <ViewInvoice />
               </Layout>
             </ProtectedRoute>
           }
@@ -342,11 +340,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Editar Fatura" 
-                  message="A página de edição da fatura está em desenvolvimento"
-                  estimatedDate="Próxima atualização"
-                />
+                <EditInvoice />
               </Layout>
             </ProtectedRoute>
           }

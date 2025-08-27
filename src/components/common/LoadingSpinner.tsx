@@ -1,32 +1,35 @@
 // src/components/common/LoadingSpinner.tsx
-
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  text?: string;
+  message?: string;
 }
-
-const sizeClasses = {
-  sm: 'w-4 h-4',
-  md: 'w-6 h-6', 
-  lg: 'w-8 h-8'
-};
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
   className,
-  text 
+  message 
 }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4 border-2',
+    md: 'w-6 h-6 border-2',
+    lg: 'w-8 h-8 border-4'
+  };
+
   return (
-    <div className={cn("flex items-center justify-center", className)}>
-      <div className="flex items-center gap-2">
-        <Loader2 className={cn("animate-spin", sizeClasses[size])} />
-        {text && <span className="text-sm text-muted-foreground">{text}</span>}
-      </div>
+    <div className="flex flex-col items-center gap-2">
+      <div 
+        className={cn(
+          `${sizeClasses[size]} border-slate-200 border-t-slate-900 rounded-full animate-spin`,
+          className
+        )} 
+      />
+      {message && (
+        <p className="text-sm text-slate-600">{message}</p>
+      )}
     </div>
   );
 };

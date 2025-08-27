@@ -48,6 +48,13 @@ export function useInvoice(id: string) {
     queryKey: FINANCIAL_KEYS.invoice(id),
     queryFn: () => financialService.getInvoiceById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('não encontrada')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 }
 
