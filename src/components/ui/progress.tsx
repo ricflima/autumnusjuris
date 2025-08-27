@@ -1,30 +1,50 @@
 // src/components/ui/progress.tsx
 
-"use client"
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-import * as React from "react"
-import * as ProgressPrimitive from "@radix-ui/react-progress"
+interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: number;
+  max?: number;
+  className?: string;
+  indicatorClassName?: string;
+}
 
-import { cn } from "@/lib/utils"
+const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
+  ({ className, value = 0, max = 100, indicatorClassName, ...props }, ref) => {
+    // Garantir que o valor está entre 0 e max
+    const normalizedValue = Math.min(Math.max(value, 0), max);
+    const percentage = (normalizedValue / max) * 100;
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn(
-      "relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800",
-      className
-    )}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-blue-600 transition-all duration-300 ease-in-out dark:bg-blue-400"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-    />
-  </ProgressPrimitive.Root>
-))
-Progress.displayName = ProgressPrimitive.Root.displayName
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+          "bg-gray-200",
+          className
+        )}
+        {...props}
+      >
+        <div
+          className={cn(
+            "h-full w-full flex-1 bg-primary transition-all",
+            "bg-blue-600",
+            indicatorClassName
+          )}
+          style={{
+            transform: `translateX(-${100 - percentage}%)`
+          }}
+          role="progressbar"
+          aria-valuenow={normalizedValue}
+          aria-valuemin={0}
+          aria-valuemax={max}
+        />
+      </div>
+    );
+  }
+);
 
-export { Progress }
+Progress.displayName = 'Progress';
+
+export { Progress };
