@@ -15,6 +15,7 @@ import {
   User,
   Bell,
   Search,
+  BarChart3,
   ChevronDown,
   Gavel
 } from 'lucide-react';
@@ -36,6 +37,7 @@ const navigation = [
   { name: 'Calendário', href: '/calendar', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },
   { name: 'Configurações', href: '/settings', icon: Settings },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
 export function Layout({ children }: LayoutProps) {

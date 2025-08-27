@@ -50,6 +50,9 @@ import FinancialReports from '@/pages/financial/FinancialReports';
 import EditInvoice from '@/pages/financial/EditInvoice';
 import ViewInvoice from '@/pages/financial/ViewInvoice';
 
+// Analytics
+import Analytics from '@/pages/analytics/Analytics';
+
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
@@ -449,6 +452,16 @@ function App() {
               </Layout>
             </ProtectedRoute>
           }
+        />
+
+        // No App.tsx - uma rota que captura todas as subrotas:
+        <Route path="/analytics/*" element={
+          <ProtectedRoute>
+            <Layout>
+              <Analytics />
+            </Layout>
+          </ProtectedRoute>
+          } 
         />
 
         {/* === PÁGINAS DE ERRO === */}

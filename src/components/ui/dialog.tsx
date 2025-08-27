@@ -135,3 +135,10 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     </div>
   );
 };
+
+export const DialogTrigger: React.FC<{
+  asChild?: boolean;
+  children: React.ReactNode;
+}> = ({ children }) => {
+  return <>{children}</>;
+};
