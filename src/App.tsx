@@ -66,6 +66,10 @@ import TasksList from '@/pages/tasks/TasksList';
 // Search
 import SearchResults from '@/pages/search/SearchResults';
 
+// Phase 9 - Advanced Features
+import { DigitalSignatures } from '@/pages/signatures/DigitalSignatures';
+import { AIDocumentAnalysis } from '@/pages/ai/AIDocumentAnalysis';
+
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
@@ -453,6 +457,64 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <SearchResults />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Phase 9 - Advanced Features Routes */}
+        <Route
+          path="/signatures"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DigitalSignatures />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/ai/document-analysis"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AIDocumentAnalysis />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+
+        {/* Placeholder Routes for other Phase 9 features */}
+        <Route
+          path="/integrations/tribunals"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon title="Integração com Tribunais" message="Sistema de integração com tribunais em desenvolvimento" />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/notifications/advanced"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon title="Notificações Avançadas" message="Sistema de notificações push avançadas em desenvolvimento" />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/integrations/whatsapp"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon title="WhatsApp Business" message="Integração com WhatsApp Business em desenvolvimento" />
               </Layout>
             </ProtectedRoute>
           }

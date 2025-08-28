@@ -1,7 +1,7 @@
 // src/pages/documents/DocumentUpload.tsx
 
-import React, { useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -81,7 +81,9 @@ interface FileUploadItem {
 
 export default function DocumentUpload() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [uploadFiles, setUploadFiles] = useState<FileUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [currentUploadIndex, setCurrentUploadIndex] = useState(-1);
@@ -89,7 +91,13 @@ export default function DocumentUpload() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderDescription, setNewFolderDescription] = useState('');
 
-  const { data: foldersData } = useFolders();
+  // Parâmetros da URL para caso específico
+  const caseId = searchParams.get('caseId');
+  const initialFolderId = searchParams.get('folderId');
+
+  const { data: foldersData } = useFolders(
+    caseId ? { context: 'case', contextId: caseId } : { context: 'general' }
+  );
   const uploadMutation = useUploadDocument();
   const createFolderMutation = useCreateFolder();
   const { validateFiles } = useFileValidation();
@@ -104,9 +112,21 @@ export default function DocumentUpload() {
     resolver: zodResolver(uploadSchema),
     defaultValues: {
       security: 'internal',
-      category: 'other'
+      category: 'other',
+      folderId: initialFolderId || undefined,
+      caseId: caseId || undefined
     }
   });
+
+  // Configurar valores iniciais quando há parâmetros da URL
+  useEffect(() => {
+    if (initialFolderId) {
+      setValue('folderId', initialFolderId);
+    }
+    if (caseId) {
+      setValue('caseId', caseId);
+    }
+  }, [initialFolderId, caseId, setValue]);
 
   const onFilesDrop = useCallback((files: File[]) => {
     const { validFiles, invalidFiles } = validateFiles(files);
@@ -252,7 +272,9 @@ export default function DocumentUpload() {
       const newFolder = await createFolderMutation.mutateAsync({
         name: newFolderName.trim(),
         description: newFolderDescription.trim() || undefined,
-        parentId: undefined
+        parentId: undefined,
+        context: caseId ? 'case' : 'general',
+        contextId: caseId || undefined
       });
       
       setValue('folderId', newFolder.id);

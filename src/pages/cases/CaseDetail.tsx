@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/common/LoadingScreen';
+import { CaseDocumentsManager } from '@/components/documents/CaseDocumentsManager';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -345,54 +346,10 @@ export default function CaseDetail() {
 
         {/* Documentos */}
         <TabsContent value="documents">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Documentos</CardTitle>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Documento
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {case_.documents && case_.documents.length > 0 ? (
-                <div className="space-y-3">
-                  {case_.documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-blue-500" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">{doc.name}</h4>
-                          <p className="text-xs text-gray-500">
-                            Enviado por {doc.uploadedBy} em {formatDate(doc.uploadedAt)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <p>Nenhum documento adicionado</p>
-                  <Button className="mt-2" size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar primeiro documento
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <CaseDocumentsManager 
+            caseId={case_.id}
+            caseName={case_.title}
+          />
         </TabsContent>
 
         {/* Histórico */}

@@ -76,6 +76,8 @@ export interface DocumentAccess {
   expiresAt?: string;
 }
 
+export type FolderContext = 'general' | 'case';
+
 export interface DocumentFolder {
   id: string;
   name: string;
@@ -90,6 +92,10 @@ export interface DocumentFolder {
   updatedAt: string;
   isSystemFolder: boolean;
   permissions: any[];
+  
+  // Contexto da pasta
+  context: FolderContext;
+  contextId?: string; // ID do caso quando context = 'case'
 }
 
 export interface DocumentMetadata {
@@ -278,6 +284,7 @@ export interface DocumentsResponse {
 
 export interface DocumentFilters {
   folderId?: string;
+  folderContext?: FolderContext; // Filtrar por contexto de pasta
   category?: DocumentCategory[];
   status?: DocumentStatus[];
   security?: DocumentSecurity[];
@@ -305,12 +312,23 @@ export interface CreateFolderRequest {
   name: string;
   description?: string;
   parentId?: string;
+  context: FolderContext;
+  contextId?: string; // ID do caso quando context = 'case'
 }
 
 export interface UpdateFolderRequest {
   name?: string;
   description?: string;
   parentId?: string;
+}
+
+export interface FoldersFilters {
+  context?: FolderContext;
+  contextId?: string;
+  parentId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface FoldersResponse {

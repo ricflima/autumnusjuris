@@ -2,9 +2,91 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- PWA Icons and Manifest -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Autumnus Juris - Sistema de Gestão Jurídica</title>
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Meta viewport for mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    
+    <!-- SEO Meta Tags -->
+    <title>AutumnusJuris - Sistema de Gestão Jurídica</title>
+    <meta name="description" content="Sistema completo de gestão jurídica com funcionalidades de CRM, gestão processual e financeiro" />
+    <meta name="keywords" content="gestão jurídica, advocacia, casos, clientes, processos, financeiro" />
+    <meta name="author" content="AutumnusJuris Team" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="background-color" content="#ffffff" />
+    <meta name="display" content="standalone" />
+    <meta name="orientation" content="portrait-primary" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="AutumnusJuris" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/vite.svg" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AutumnusJuris - Sistema de Gestão Jurídica" />
+    <meta property="og:description" content="Sistema completo de gestão jurídica com funcionalidades de CRM, gestão processual e financeiro" />
+    <meta property="og:image" content="/vite.svg" />
+    <meta property="og:url" content="https://autumnusjuris.com" />
+    <meta property="og:site_name" content="AutumnusJuris" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AutumnusJuris - Sistema de Gestão Jurídica" />
+    <meta name="twitter:description" content="Sistema completo de gestão jurídica com funcionalidades de CRM, gestão processual e financeiro" />
+    <meta name="twitter:image" content="/vite.svg" />
+    
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Service Worker Registration -->
+    <script>
+      // Service Worker logic - development vs production
+      if ('serviceWorker' in navigator) {
+        // In development (localhost), disable service worker
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+          console.log('[DEV] Disabling service worker for development');
+          // Unregister any existing service workers in development
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister().then(function() {
+                console.log('[DEV] SW unregistered:', registration.scope);
+              });
+            }
+          });
+        } else {
+          // In production, register service worker
+          console.log('[PROD] Registering service worker for production');
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(registration) {
+                console.log('[PROD] SW registered successfully:', registration.scope);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', function() {
+                  console.log('[PROD] SW update found');
+                });
+              })
+              .catch(function(error) {
+                console.log('[PROD] SW registration failed:', error);
+              });
+          });
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

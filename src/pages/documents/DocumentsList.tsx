@@ -56,7 +56,8 @@ export default function DocumentsList() {
     page: 1,
     limit: 24,
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
+    folderContext: 'general' // Filtrar apenas documentos gerais
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>();
@@ -68,7 +69,7 @@ export default function DocumentsList() {
   const [newFolderDescription, setNewFolderDescription] = useState('');
 
   const { data: documentsData, isLoading, error, refetch } = useDocuments(filters);
-  const { data: foldersData } = useFolders();
+  const { data: foldersData } = useFolders({ context: 'general' }); // Buscar apenas pastas gerais
   const { data: stats } = useDocumentStats();
   const deleteDocumentMutation = useDeleteDocument();
   const createFolderMutation = useCreateFolder();
@@ -224,7 +225,8 @@ export default function DocumentsList() {
       await createFolderMutation.mutateAsync({
         name: newFolderName.trim(),
         description: newFolderDescription.trim() || undefined,
-        parentId: selectedFolder
+        parentId: selectedFolder,
+        context: 'general'
       });
       
       setShowNewFolderModal(false);
@@ -506,7 +508,7 @@ export default function DocumentsList() {
         
         <div className="flex items-center space-x-2">
           <Button asChild>
-            <Link to="/documents/upload">
+            <Link to="/documents/upload" className="flex items-center">
               <Upload className="w-4 h-4 mr-2" />
               Upload
             </Link>
@@ -774,7 +776,7 @@ export default function DocumentsList() {
           
           {!searchTerm && !selectedFolder && (
             <Button asChild>
-              <Link to="/documents/upload">
+              <Link to="/documents/upload" className="flex items-center">
                 <Upload className="w-4 h-4 mr-2" />
                 Fazer Upload
               </Link>

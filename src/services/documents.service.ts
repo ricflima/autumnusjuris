@@ -31,6 +31,7 @@ import {
 
 // Mock data para desenvolvimento
 const MOCK_FOLDERS: DocumentFolder[] = [
+  // Pastas gerais
   {
     id: '1',
     name: 'Contratos',
@@ -43,7 +44,8 @@ const MOCK_FOLDERS: DocumentFolder[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-15T10:30:00Z',
     isSystemFolder: true,
-    permissions: []
+    permissions: [],
+    context: 'general'
   },
   {
     id: '2',
@@ -57,7 +59,8 @@ const MOCK_FOLDERS: DocumentFolder[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-20T14:15:00Z',
     isSystemFolder: true,
-    permissions: []
+    permissions: [],
+    context: 'general'
   },
   {
     id: '3',
@@ -71,7 +74,8 @@ const MOCK_FOLDERS: DocumentFolder[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-25T09:45:00Z',
     isSystemFolder: true,
-    permissions: []
+    permissions: [],
+    context: 'general'
   },
   {
     id: '4',
@@ -85,7 +89,41 @@ const MOCK_FOLDERS: DocumentFolder[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-10T16:20:00Z',
     isSystemFolder: true,
-    permissions: []
+    permissions: [],
+    context: 'general'
+  },
+  // Pastas específicas do caso 1
+  {
+    id: 'case-1-folder-1',
+    name: 'Documentos Iniciais',
+    description: 'Contratos e documentos do início do caso',
+    path: '/Documentos Iniciais',
+    level: 1,
+    documentsCount: 2,
+    subFoldersCount: 0,
+    createdBy: 'user-1',
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-02-01T14:30:00Z',
+    isSystemFolder: false,
+    permissions: [],
+    context: 'case',
+    contextId: '1'
+  },
+  {
+    id: 'case-1-folder-2',
+    name: 'Provas e Evidências',
+    description: 'Evidências coletadas para o caso',
+    path: '/Provas e Evidências',
+    level: 1,
+    documentsCount: 1,
+    subFoldersCount: 0,
+    createdBy: 'user-1',
+    createdAt: '2024-02-05T16:00:00Z',
+    updatedAt: '2024-02-05T16:20:00Z',
+    isSystemFolder: false,
+    permissions: [],
+    context: 'case',
+    contextId: '1'
   }
 ];
 
@@ -97,8 +135,8 @@ const MOCK_DOCUMENTS: Document[] = [
     fileSize: 2456789,
     fileType: 'pdf',
     mimeType: 'application/pdf',
-    folderId: '1',
-    folderPath: '/Contratos',
+    folderId: 'case-1-folder-1',
+    folderPath: '/Documentos Iniciais',
     category: 'contract',
     tags: ['contrato', 'prestação-serviços', 'silva'],
     status: 'active',
@@ -176,8 +214,8 @@ const MOCK_DOCUMENTS: Document[] = [
     fileSize: 1789456,
     fileType: 'pdf',
     mimeType: 'application/pdf',
-    folderId: '2',
-    folderPath: '/Petições',
+    folderId: 'case-1-folder-1',
+    folderPath: '/Documentos Iniciais',
     category: 'petition',
     tags: ['petição', 'inicial', 'trabalhista', 'silva'],
     status: 'active',
@@ -243,8 +281,8 @@ const MOCK_DOCUMENTS: Document[] = [
     fileSize: 98765,
     fileType: 'xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    folderId: '3',
-    folderPath: '/Evidências',
+    folderId: 'case-1-folder-2',
+    folderPath: '/Provas e Evidências',
     category: 'evidence',
     tags: ['evidência', 'cartão-ponto', 'horas-extras'],
     status: 'active',
@@ -345,6 +383,28 @@ class DocumentsService {
       // Aplicar filtros
       if (filters.folderId) {
         filteredDocuments = filteredDocuments.filter(doc => doc.folderId === filters.folderId);
+      }
+      
+      if (filters.folderContext) {
+        // Buscar pastas do contexto específico
+        const contextFolders = MOCK_FOLDERS
+          .filter(f => f.context === filters.folderContext)
+          .map(f => f.id);
+        
+        if (filters.folderContext === 'case' && filters.caseId) {
+          // Para contexto de caso, filtrar pastas específicas do caso
+          const caseFolders = MOCK_FOLDERS
+            .filter(f => f.context === 'case' && f.contextId === filters.caseId)
+            .map(f => f.id);
+          filteredDocuments = filteredDocuments.filter(doc => 
+            caseFolders.includes(doc.folderId || '') || doc.caseId === filters.caseId
+          );
+        } else {
+          filteredDocuments = filteredDocuments.filter(doc =>
+            contextFolders.includes(doc.folderId || '') ||
+            (filters.folderContext === 'general' && !doc.caseId)
+          );
+        }
       }
       
       if (filters.category?.length) {
@@ -573,16 +633,55 @@ class DocumentsService {
   }
   
   // CRUD Pastas
-  async getFolders(): Promise<FoldersResponse> {
+  async getFolders(filters: import('@/types/documents').FoldersFilters = {}): Promise<FoldersResponse> {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      let filteredFolders = [...MOCK_FOLDERS];
+      
+      // Filtrar por contexto
+      if (filters.context) {
+        filteredFolders = filteredFolders.filter(folder => 
+          folder.context === filters.context
+        );
+      }
+      
+      // Filtrar por ID do contexto (caso)
+      if (filters.contextId) {
+        filteredFolders = filteredFolders.filter(folder => 
+          folder.contextId === filters.contextId
+        );
+      }
+      
+      // Filtrar por pasta pai
+      if (filters.parentId) {
+        filteredFolders = filteredFolders.filter(folder => 
+          folder.parentId === filters.parentId
+        );
+      }
+      
+      // Busca por nome
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        filteredFolders = filteredFolders.filter(folder =>
+          folder.name.toLowerCase().includes(searchTerm) ||
+          folder.description?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Paginação
+      const page = filters.page || 1;
+      const limit = filters.limit || 50;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedFolders = filteredFolders.slice(startIndex, endIndex);
+      
       return {
-        folders: MOCK_FOLDERS,
-        total: MOCK_FOLDERS.length,
-        page: 1,
-        limit: 50,
-        hasMore: false
+        folders: paginatedFolders,
+        total: filteredFolders.length,
+        page,
+        limit,
+        hasMore: endIndex < filteredFolders.length
       };
     } catch (error) {
       throw new Error('Erro ao buscar pastas');
@@ -609,7 +708,9 @@ class DocumentsService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isSystemFolder: false,
-        permissions: []
+        permissions: [],
+        context: data.context,
+        contextId: data.contextId
       };
       
       MOCK_FOLDERS.push(newFolder);

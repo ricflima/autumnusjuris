@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { documentsService } from '@/services/documents.service';
 import {
   DocumentFilters,
+  FoldersFilters,
   CreateDocumentRequest,
   UpdateDocumentRequest,
   CreateFolderRequest,
@@ -32,10 +33,10 @@ export function useDocument(id: string | undefined) {
   });
 }
 
-export function useFolders() {
+export function useFolders(filters: FoldersFilters = {}) {
   return useQuery({
-    queryKey: ['folders'],
-    queryFn: () => documentsService.getFolders(),
+    queryKey: ['folders', filters],
+    queryFn: () => documentsService.getFolders(filters),
     staleTime: 10 * 60 * 1000, // 10 minutos
   });
 }

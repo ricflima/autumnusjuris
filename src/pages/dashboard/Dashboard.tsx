@@ -462,11 +462,13 @@ export default function Dashboard() {
               <p className="text-xs text-blue-600">Caso: Ação de Cobrança ABC</p>
             </div>
             
-            <Link to="/calendar">
-              <Button variant="outline" className="w-full" size="sm">
-                Ver agenda completa
-              </Button>
-            </Link>
+            <div className="pt-4">
+              <Link to="/calendar">
+                <Button variant="outline" className="w-full" size="sm">
+                  Ver agenda completa
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

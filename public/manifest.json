@@ -1,0 +1,47 @@
+{
+  "name": "AutumnusJuris - Sistema de Gestão Jurídica",
+  "short_name": "AutumnusJuris",
+  "description": "Sistema completo de gestão jurídica com funcionalidades de CRM, gestão processual e financeiro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "48x48 72x72 96x96 144x144 192x192 256x256 384x384 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Acesso rápido ao dashboard principal",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Casos",
+      "short_name": "Casos",
+      "description": "Gerenciar casos jurídicos",
+      "url": "/cases"
+    },
+    {
+      "name": "Clientes",
+      "short_name": "Clientes",
+      "description": "Gerenciar clientes",
+      "url": "/clients"
+    },
+    {
+      "name": "Financeiro",
+      "short_name": "Financeiro",
+      "description": "Dashboard financeiro",
+      "url": "/financial"
+    }
+  ],
+  "prefer_related_applications": false
+}

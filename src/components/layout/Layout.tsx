@@ -17,7 +17,11 @@ import {
   Search,
   BarChart3,
   ChevronDown,
-  Gavel
+  Gavel,
+  PenTool,
+  Brain,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -28,7 +32,14 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: any;
+  badge?: string;
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Casos', href: '/cases', icon: FileText },
   { name: 'Clientes', href: '/clients', icon: Users },
@@ -36,8 +47,11 @@ const navigation = [
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Calendário', href: '/calendar', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },
+  { name: 'Analytics & BI', href: '/analytics', icon: BarChart3, badge: 'NOVO' },
+  // Fase 9 - Funcionalidades Avançadas
+  { name: 'Assinaturas', href: '/signatures', icon: PenTool, badge: 'NOVO' },
+  { name: 'IA Documentos', href: '/ai/document-analysis', icon: Brain, badge: 'NOVO' },
   { name: 'Configurações', href: '/settings', icon: Settings },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
 export function Layout({ children }: LayoutProps) {
@@ -89,18 +103,25 @@ export function Layout({ children }: LayoutProps) {
                     key={item.name}
                     to={item.href}
                     className={`
-                      group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
                       ${isActive 
                         ? 'bg-slate-900 text-white' 
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}
                   >
-                    <Icon className={`
-                      mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200
-                      ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'}
-                    `} />
-                    {item.name}
+                    <div className="flex items-center">
+                      <Icon className={`
+                        mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200
+                        ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'}
+                      `} />
+                      {item.name}
+                    </div>
+                    {item.badge && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -165,18 +186,25 @@ export function Layout({ children }: LayoutProps) {
                       to={item.href}
                       onClick={() => setSidebarOpen(false)}
                       className={`
-                        group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors
+                        group flex items-center justify-between px-2 py-2 text-base font-medium rounded-md transition-colors
                         ${isActive 
                           ? 'bg-slate-900 text-white' 
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }
                       `}
                     >
-                      <Icon className={`
-                        mr-4 flex-shrink-0 h-5 w-5
-                        ${isActive ? 'text-white' : 'text-gray-400'}
-                      `} />
-                      {item.name}
+                      <div className="flex items-center">
+                        <Icon className={`
+                          mr-4 flex-shrink-0 h-5 w-5
+                          ${isActive ? 'text-white' : 'text-gray-400'}
+                        `} />
+                        {item.name}
+                      </div>
+                      {item.badge && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
