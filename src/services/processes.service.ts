@@ -56,12 +56,12 @@ const MOCK_PROCESSES: Process[] = [
     },
     filingDate: '2024-01-15T10:00:00Z',
     citationDate: '2024-02-01T10:00:00Z',
-    lastMovementDate: '2024-03-10T14:30:00Z',
+    lastMovementDate: '2025-07-10T14:30:00Z',
     notes: 'Cliente possui todos os documentos comprobatórios. Empresa réu contestou parcialmente.',
     tags: ['cobrança', 'empresarial'],
     isConfidential: false,
     createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-03-10T14:30:00Z',
+    updatedAt: '2025-07-10T14:30:00Z',
     createdBy: 'lawyer-1',
     daysActive: 55,
     pendingDeadlines: 2,
@@ -129,12 +129,12 @@ const MOCK_PROCESSES: Process[] = [
     },
     filingDate: '2024-01-10T10:00:00Z',
     citationDate: '2024-01-20T10:00:00Z',
-    lastMovementDate: '2024-03-08T09:00:00Z',
+    lastMovementDate: '2025-07-08T09:00:00Z',
     notes: 'Audiência de conciliação não obteve êxito. Processo em fase de julgamento.',
     tags: ['trabalhista', 'horas-extras'],
     isConfidential: false,
     createdAt: '2024-01-10T10:00:00Z',
-    updatedAt: '2024-03-08T09:00:00Z',
+    updatedAt: '2025-07-08T09:00:00Z',
     createdBy: 'lawyer-2',
     daysActive: 60,
     pendingDeadlines: 0,
@@ -149,14 +149,14 @@ const MOCK_DEADLINES: ProcessDeadline[] = [
     type: 'response',
     title: 'Tríplica',
     description: 'Prazo para apresentar tríplica no processo de cobrança',
-    dueDate: '2024-03-25T23:59:59Z',
+    dueDate: '2025-07-25T23:59:59Z',
     status: 'pending',
     priority: 'medium',
     isRecurring: false,
     notes: 'Aguardando documentos complementares do cliente',
     attachments: [],
-    createdAt: '2024-03-10T14:30:00Z',
-    updatedAt: '2024-03-10T14:30:00Z'
+    createdAt: '2025-07-10T14:30:00Z',
+    updatedAt: '2025-07-10T14:30:00Z'
   },
   {
     id: '2',
@@ -164,14 +164,14 @@ const MOCK_DEADLINES: ProcessDeadline[] = [
     type: 'hearing',
     title: 'Audiência de Instrução',
     description: 'Audiência de instrução e julgamento',
-    dueDate: '2024-04-15T14:00:00Z',
+    dueDate: '2025-08-15T14:00:00Z',
     status: 'pending',
     priority: 'high',
     isRecurring: false,
     notes: 'Preparar rol de testemunhas',
     attachments: [],
-    createdAt: '2024-03-01T10:00:00Z',
-    updatedAt: '2024-03-01T10:00:00Z'
+    createdAt: '2025-07-01T10:00:00Z',
+    updatedAt: '2025-07-01T10:00:00Z'
   },
   {
     id: '3',
@@ -179,12 +179,12 @@ const MOCK_DEADLINES: ProcessDeadline[] = [
     type: 'petition',
     title: 'Manifestação sobre Documentos',
     description: 'Prazo para manifestação sobre documentos juntados',
-    dueDate: '2024-03-30T23:59:59Z',
+    dueDate: '2025-07-30T23:59:59Z',
     status: 'pending',
     priority: 'low',
     isRecurring: false,
-    createdAt: '2024-03-15T10:00:00Z',
-    updatedAt: '2024-03-15T10:00:00Z'
+    createdAt: '2025-07-15T10:00:00Z',
+    updatedAt: '2025-07-15T10:00:00Z'
   }
 ];
 
@@ -194,15 +194,15 @@ const MOCK_HEARINGS: ProcessHearing[] = [
     processId: '1',
     title: 'Audiência de Instrução e Julgamento',
     description: 'Audiência para oitiva de testemunhas e julgamento',
-    date: '2024-04-15',
+    date: '2025-08-15',
     time: '14:00',
     location: '1ª Vara Cível - Sala de Audiências 1',
     type: 'instruction',
     status: 'scheduled',
     participants: ['lawyer-1', 'client-1', 'testemunha-1'],
     notes: 'Levar 3 testemunhas e documentos originais',
-    createdAt: '2024-03-01T10:00:00Z',
-    updatedAt: '2024-03-01T10:00:00Z'
+    createdAt: '2025-07-01T10:00:00Z',
+    updatedAt: '2025-07-01T10:00:00Z'
   },
   {
     id: '2',
@@ -227,24 +227,24 @@ const MOCK_MOVEMENTS: ProcessMovement[] = [
   {
     id: '1',
     processId: '1',
-    date: '2024-03-10T14:30:00Z',
+    date: '2025-07-10T14:30:00Z',
     description: 'Juntada de documentos pelo autor',
     type: 'document',
     author: 'Cartório da 1ª Vara Cível',
     official: true,
-    createdAt: '2024-03-10T14:30:00Z',
-    updatedAt: '2024-03-10T14:30:00Z'
+    createdAt: '2025-07-10T14:30:00Z',
+    updatedAt: '2025-07-10T14:30:00Z'
   },
   {
     id: '2',
     processId: '1',
-    date: '2024-03-01T10:00:00Z',
+    date: '2025-07-01T10:00:00Z',
     description: 'Designada audiência de instrução e julgamento para 15/04/2024 às 14h00',
     type: 'hearing',
     author: 'Juiz da 1ª Vara Cível',
     official: true,
-    createdAt: '2024-03-01T10:00:00Z',
-    updatedAt: '2024-03-01T10:00:00Z'
+    createdAt: '2025-07-01T10:00:00Z',
+    updatedAt: '2025-07-01T10:00:00Z'
   }
 ];
 

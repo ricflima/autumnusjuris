@@ -328,7 +328,11 @@ const InvoicesList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
+                  <TableRow 
+                    key={invoice.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => window.location.href = `/financial/invoices/${invoice.id}`}
+                  >
                     <TableCell className="font-medium">
                       {invoice.invoiceNumber}
                     </TableCell>

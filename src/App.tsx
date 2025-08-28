@@ -18,6 +18,7 @@ import Dashboard from '@/pages/dashboard/Dashboard';
 // Cases
 import CasesList from '@/pages/cases/CasesList';
 import CreateCase from '@/pages/cases/CreateCase';
+import CaseDetail from '@/pages/cases/CaseDetail';
 import EditCase from '@/pages/cases/EditCase';
 
 // Clients
@@ -49,9 +50,19 @@ import CreateExpense from '@/pages/financial/CreateExpense';
 import FinancialReports from '@/pages/financial/FinancialReports';
 import EditInvoice from '@/pages/financial/EditInvoice';
 import ViewInvoice from '@/pages/financial/ViewInvoice';
+import TransactionsList from '@/pages/financial/TransactionsList';
 
 // Analytics
 import Analytics from '@/pages/analytics/Analytics';
+
+// Settings
+import Settings from '@/pages/settings/Settings';
+
+// Tasks
+import TasksList from '@/pages/tasks/TasksList';
+
+// Search
+import SearchResults from '@/pages/search/SearchResults';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
@@ -120,11 +131,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Visualizar Caso" 
-                  message="A página de detalhes do caso está em desenvolvimento"
-                  estimatedDate="Fase 7"
-                />
+                <CaseDetail />
               </Layout>
             </ProtectedRoute>
           }
@@ -413,11 +420,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Transações" 
-                  message="A página de transações está em desenvolvimento"
-                  estimatedDate="Próxima atualização"
-                />
+                <TransactionsList />
               </Layout>
             </ProtectedRoute>
           }
@@ -429,11 +432,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon 
-                  title="Configurações" 
-                  message="A página de configurações está em desenvolvimento" 
-                  estimatedDate="Fase 7"
-                />
+                <Settings />
               </Layout>
             </ProtectedRoute>
           }
@@ -462,6 +461,28 @@ function App() {
             </Layout>
           </ProtectedRoute>
           } 
+        />
+
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TasksList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SearchResults />
+              </Layout>
+            </ProtectedRoute>
+          }
         />
 
         {/* === PÁGINAS DE ERRO === */}

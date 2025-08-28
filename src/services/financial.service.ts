@@ -95,7 +95,7 @@ const MOCK_INVOICES: Invoice[] = [
     paymentTerms: '30 dias',
     isRecurring: false,
     createdBy: 'user-1',
-    createdAt: '2024-03-01T10:00:00Z',
+    createdAt: '2025-07-25T10:00:00Z',
     isPaid: false,
     isOverdue: false,
     daysOverdue: 0,
@@ -250,7 +250,7 @@ const MOCK_PAYMENTS: Payment[] = [
 const MOCK_EXPENSES: Expense[] = [
   {
     id: '1',
-    date: '2024-03-15',
+    date: '2025-08-15',
     description: 'Custas processuais - Processo Trabalhista',
     category: 'court_fees',
     amount: 450,
@@ -277,11 +277,11 @@ const MOCK_EXPENSES: Expense[] = [
     isReimbursed: false,
     isRecurring: false,
     createdBy: 'user-1',
-    createdAt: '2024-03-15T10:00:00Z'
+    createdAt: '2025-08-15T10:00:00Z'
   },
   {
     id: '2',
-    date: '2024-03-10',
+    date: '2025-08-10',
     description: 'Material de escritório',
     category: 'office_supplies',
     amount: 250,
@@ -292,11 +292,11 @@ const MOCK_EXPENSES: Expense[] = [
     isReimbursed: false,
     isRecurring: false,
     createdBy: 'user-1',
-    createdAt: '2024-03-10T14:30:00Z'
+    createdAt: '2025-08-10T14:30:00Z'
   },
   {
     id: '3',
-    date: '2024-03-01',
+    date: '2025-07-25',
     description: 'Aluguel do escritório',
     category: 'rent',
     amount: 3500,

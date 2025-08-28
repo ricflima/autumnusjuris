@@ -363,7 +363,14 @@ const ExpensesList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {expenses.map((expense) => (
-                  <TableRow key={expense.id}>
+                  <TableRow 
+                    key={expense.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => {
+                      // TODO: Implementar página de detalhes de despesa
+                      alert(`Detalhes da despesa: ${expense.description}`);
+                    }}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium">{expense.description}</p>

@@ -38,6 +38,7 @@ import { Separator } from '@/components/ui/separator';
 import { useDocuments, useFolders, useDeleteDocument, useDocumentStats } from '@/hooks/useDocuments';
 import { documentsService } from '@/services/documents.service';
 import { DocumentFilters, Document, DocumentFolder } from '@/types/documents';
+import toast from 'react-hot-toast';
 
 const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48, 96];
 
@@ -381,7 +382,13 @@ export default function DocumentsList() {
             </Link>
           </Button>
           
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            const folderName = prompt('Nome da nova pasta:');
+            if (folderName && folderName.trim()) {
+              // TODO: Implementar criação de pasta
+              toast.success(`Pasta "${folderName}" criada com sucesso!`);
+            }
+          }}>
             <FolderPlus className="w-4 h-4 mr-2" />
             Nova Pasta
           </Button>

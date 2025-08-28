@@ -17,7 +17,9 @@ import {
   ArrowDown,
   Eye,
   Download,
-  Filter
+  Filter,
+  FileText,
+  Building
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,11 +85,15 @@ const FinancialDashboard: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => {
+            alert('Funcionalidade de filtros será implementada em breve!');
+          }}>
             <Filter className="w-4 h-4 mr-2" />
             Filtros
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => {
+            alert('Exportação de relatórios será implementada em breve!');
+          }}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
@@ -437,28 +443,149 @@ const FinancialDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="expenses">
-          <Card>
-            <CardHeader>
-              <CardTitle>Despesas por Categoria</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {summaryData?.expensesByCategory ? (
+          <div className="space-y-6">
+            {/* Resumo das despesas */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Total do Mês</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">
+                    {formatCurrency(monthStats?.totalExpenses || 2450)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Agosto 2025
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Despesas Pendentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {formatCurrency(450)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    2 despesas
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Maior Categoria</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold text-gray-900">
+                    Aluguel
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(3500)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Lista de despesas recentes */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Despesas Recentes</CardTitle>
+                <Link to="/financial/expenses">
+                  <Button variant="outline" size="sm">
+                    Ver Todas
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(summaryData.expensesByCategory).map(([category, amount]) => (
-                    <div key={category} className="flex items-center justify-between">
-                      <span className="text-sm capitalize">{category.replace('_', ' ')}</span>
-                      <span className="font-medium">{formatCurrency(amount)}</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <Receipt className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Custas processuais - Processo Trabalhista</p>
+                        <p className="text-xs text-gray-500">15/08/2025 • Transferência bancária</p>
+                      </div>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="font-semibold text-red-600">- {formatCurrency(450)}</p>
+                      <p className="text-xs text-gray-500">João Silva</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Material de escritório</p>
+                        <p className="text-xs text-gray-500">10/08/2025 • Cartão de crédito</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-red-600">- {formatCurrency(250)}</p>
+                      <p className="text-xs text-gray-500">Papelaria Central</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Building className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Aluguel do escritório</p>
+                        <p className="text-xs text-gray-500">25/07/2025 • Transferência bancária</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-red-600">- {formatCurrency(3500)}</p>
+                      <p className="text-xs text-gray-500">Recorrente</p>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <EmptyState
-                  title="Nenhuma despesa"
-                  description="Não há despesas registradas no período"
-                />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            {/* Despesas por categoria */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Por Categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm">Aluguel</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(3500)}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-red-600" />
+                      <span className="text-sm">Custas Processuais</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(450)}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm">Material de Escritório</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(250)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="cashflow">

@@ -1,7 +1,7 @@
 // src/pages/dashboard/Dashboard.tsx - VERSÃO COMPLETA CORRIGIDA PARA FASE 4
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, 
   FileText, 
@@ -28,7 +28,15 @@ import { formatCurrencyCompact, formatDate } from '@/lib/utils';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      // Implementar busca global - navegar para uma página de resultados
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
   // Query para buscar casos recentes
   const { data: casesData } = useQuery({
@@ -135,6 +143,7 @@ export default function Dashboard() {
             placeholder="Buscar casos, clientes, processos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearch}
             className="pl-10 w-full md:w-80"
           />
         </div>
@@ -390,9 +399,11 @@ export default function Dashboard() {
                        case_.status === 'in_court' ? 'Em Tribunal' : 
                        case_.status}
                     </span>
-                    <Button variant="ghost" size="sm">
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Button>
+                    <Link to={`/cases/${case_.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               ))
@@ -466,9 +477,11 @@ export default function Dashboard() {
                        client.status === 'prospect' ? 'Prospect' : 
                        client.status}
                     </span>
-                    <Button variant="ghost" size="sm">
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Button>
+                    <Link to={`/clients/${client.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               ))
@@ -555,9 +568,11 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <Button variant="outline" className="w-full" size="sm">
-              Ver todas as tarefas
-            </Button>
+            <Link to="/tasks">
+              <Button variant="outline" className="w-full" size="sm">
+                Ver todas as tarefas
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
