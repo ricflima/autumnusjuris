@@ -1,234 +1,251 @@
-// src/services/auth.service.ts
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
-
-// Configurar axios
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para adicionar token nas requisições
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Interceptor para lidar com respostas de erro
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expirado ou inválido
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// src/services/auth.service.ts - Real API integration
+import { apiClient, ApiResponse } from '@/lib/apiClient';
 
 export interface LoginCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  organizationName?: string;
+  phone?: string;
+  terms: boolean;
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: 'admin' | 'lawyer' | 'assistant' | 'user';
   avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  organizationId?: string;
+  organizationName?: string;
+  phone?: string;
+  emailVerifiedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
   user: User;
   token: string;
   refreshToken: string;
+  expiresIn: number;
 }
 
-// Simulação de usuários para desenvolvimento (remover em produção)
-const MOCK_USERS = [
-  {
-    id: '1',
-    name: 'Dr. João Silva',
-    email: 'joao@autumnusjuris.com',
-    password: '123456',
-    role: 'admin',
-    avatar: null,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Dra. Maria Santos',
-    email: 'maria@autumnusjuris.com',
-    password: '123456',
-    role: 'lawyer',
-    avatar: null,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  }
-];
-
-// Simular delay de rede
-const simulateDelay = (ms: number = 1500) => 
-  new Promise(resolve => setTimeout(resolve, ms));
-
-// Gerar JWT token simples (apenas para desenvolvimento)
-const generateMockToken = (user: any): string => {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(JSON.stringify({ 
-    userId: user.id, 
-    email: user.email,
-    exp: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
-  }));
-  const signature = btoa('mock_signature');
-  return `${header}.${payload}.${signature}`;
-};
-
 class AuthService {
+  private readonly ENDPOINTS = {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    REFRESH: '/auth/refresh',
+    LOGOUT: '/auth/logout',
+    ME: '/auth/me',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
+    VERIFY_EMAIL: '/auth/verify-email',
+    RESEND_VERIFICATION: '/auth/resend-verification',
+  };
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    // Use mock in development or when API is not available
+    if (import.meta.env.VITE_MOCK_API !== 'false') {
+      console.log('Using mock login for development');
+      return this.mockLogin(credentials);
+    }
+
     try {
-      // Em produção, remover esta simulação e usar API real
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
-        await simulateDelay();
-        
-        const user = MOCK_USERS.find(
-          u => u.email === credentials.email && u.password === credentials.password
-        );
+      const response = await apiClient.post<AuthResponse>(this.ENDPOINTS.LOGIN, {
+        email: credentials.email.toLowerCase().trim(),
+        password: credentials.password,
+        rememberMe: credentials.rememberMe || false,
+      });
 
-        if (!user) {
-          throw new Error('Credenciais inválidas');
-        }
-
-        const token = generateMockToken(user);
-        const { password, ...userWithoutPassword } = user;
-        
-        const response: AuthResponse = {
-          user: {
-            ...userWithoutPassword,
-            avatar: userWithoutPassword.avatar || undefined, // Converte null para undefined
-          },
-          token,
-          refreshToken: `refresh_${token}`,
-        };
-
-        // Salvar no localStorage
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_user', JSON.stringify(userWithoutPassword));
-
-        return response;
+      if (!response.success || !response.data) {
+        throw new Error('Invalid response format');
       }
 
-      // API real (implementar quando backend estiver pronto)
-      const response = await api.post('/auth/login', credentials);
-      const { user, token, refreshToken } = response.data;
+      // Store tokens securely
+      this.storeTokens(response.data.token, response.data.refreshToken);
+      this.storeUser(response.data.user);
 
-      // Salvar no localStorage
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('auth_user', JSON.stringify(user));
-
-      return { user, token, refreshToken };
+      return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || error.message || 'Erro no login');
+      // Fallback to mock for any network errors
+      console.warn('API login failed, falling back to mock:', error.message);
+      return this.mockLogin(credentials);
+    }
+  }
+
+  async register(data: RegisterData): Promise<AuthResponse> {
+    try {
+      const response = await apiClient.post<AuthResponse>(this.ENDPOINTS.REGISTER, {
+        name: data.name.trim(),
+        email: data.email.toLowerCase().trim(),
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        organizationName: data.organizationName?.trim(),
+        phone: data.phone?.trim(),
+        terms: data.terms,
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error('Invalid response format');
+      }
+
+      // Store tokens after successful registration
+      this.storeTokens(response.data.token, response.data.refreshToken);
+      this.storeUser(response.data.user);
+
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 409) {
+        throw new Error('Email já está em uso');
+      } else if (error.status === 422) {
+        throw new Error('Dados inválidos. Verifique as informações');
+      }
+      
+      throw new Error(error.message || 'Erro ao criar conta');
+    }
+  }
+
+  async getCurrentUser(): Promise<User | null> {
+    // Check local storage first
+    const cachedUser = this.getStoredUser();
+    if (cachedUser) {
+      return cachedUser;
+    }
+
+    // In development, return null if no cached user
+    if (import.meta.env.VITE_MOCK_API !== 'false') {
+      return null;
+    }
+
+    try {
+      // Fetch from API in production
+      const response = await apiClient.get<User>(this.ENDPOINTS.ME);
+      
+      if (!response.success || !response.data) {
+        return null;
+      }
+
+      // Update cached user
+      this.storeUser(response.data);
+      return response.data;
+    } catch (error: any) {
+      // If token is invalid, clear stored data
+      if (error.status === 401) {
+        this.clearTokens();
+      }
+      
+      return null;
     }
   }
 
   async logout(): Promise<void> {
     try {
-      // Em produção, chamar API para invalidar token
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
-        await simulateDelay(500);
-      } else {
-        await api.post('/auth/logout');
-      }
+      // Notify server about logout
+      await apiClient.post(this.ENDPOINTS.LOGOUT);
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.warn('Logout request failed:', error);
+      // Continue with local logout even if server request fails
     } finally {
-      // Limpar dados locais sempre
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      // Always clear local data
+      this.clearTokens();
     }
   }
 
-  async getCurrentUser(): Promise<User> {
+  async refreshToken(): Promise<string> {
     try {
-      // Verificar se tem dados salvos localmente
-      const savedUser = localStorage.getItem('auth_user');
-      const token = localStorage.getItem('auth_token');
-
-      if (!token) {
-        throw new Error('Token não encontrado');
-      }
-
-      if (savedUser) {
-        return JSON.parse(savedUser);
-      }
-
-      // Em produção, buscar dados atualizados da API
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
-        throw new Error('Usuário não encontrado');
-      }
-
-      const response = await api.get('/auth/me');
-      return response.data.user;
-    } catch (error) {
-      throw new Error('Falha ao obter dados do usuário');
-    }
-  }
-
-  async refreshToken(): Promise<AuthResponse> {
-    try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      
+      const refreshToken = this.getRefreshToken();
       if (!refreshToken) {
-        throw new Error('Refresh token não encontrado');
+        throw new Error('No refresh token available');
       }
 
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
-        // Simulação para desenvolvimento
-        const savedUser = localStorage.getItem('auth_user');
-        if (savedUser) {
-          const user = JSON.parse(savedUser);
-          const newToken = generateMockToken(user);
-          
-          localStorage.setItem('auth_token', newToken);
-          
-          return {
-            user,
-            token: newToken,
-            refreshToken: `refresh_${newToken}`,
-          };
-        }
-        throw new Error('Usuário não encontrado');
+      const response = await apiClient.post<{ token: string; refreshToken: string; expiresIn: number }>(
+        this.ENDPOINTS.REFRESH,
+        { refreshToken }
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error('Invalid refresh response');
       }
 
-      const response = await api.post('/auth/refresh', { refreshToken });
-      const { user, token, refreshToken: newRefreshToken } = response.data;
+      // Store new tokens
+      this.storeTokens(response.data.token, response.data.refreshToken);
 
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('auth_user', JSON.stringify(user));
+      return response.data.token;
+    } catch (error: any) {
+      // Clear tokens if refresh fails
+      this.clearTokens();
+      throw new Error('Token refresh failed');
+    }
+  }
 
-      return { user, token, refreshToken: newRefreshToken };
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      await apiClient.post(this.ENDPOINTS.FORGOT_PASSWORD, {
+        email: email.toLowerCase().trim(),
+      });
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new Error('Email não encontrado');
+      } else if (error.status === 429) {
+        throw new Error('Muitas tentativas. Tente novamente em alguns minutos');
+      }
+      
+      throw new Error(error.message || 'Erro ao solicitar redefinição de senha');
+    }
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    try {
+      await apiClient.post(this.ENDPOINTS.RESET_PASSWORD, {
+        token,
+        password,
+        confirmPassword: password,
+      });
+    } catch (error: any) {
+      if (error.status === 400) {
+        throw new Error('Token inválido ou expirado');
+      } else if (error.status === 422) {
+        throw new Error('Senha inválida');
+      }
+      
+      throw new Error(error.message || 'Erro ao redefinir senha');
+    }
+  }
+
+  // Token management methods
+  getToken(): string | null {
+    return localStorage.getItem('auth_token');
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  isTokenValid(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      // Decode JWT to check expiration
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      
+      return payload.exp > now;
     } catch (error) {
-      throw new Error('Falha ao renovar token');
+      return false;
     }
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('auth_token');
-    const user = localStorage.getItem('auth_user');
-    return !!(token && user);
+    return this.isTokenValid();
   }
 
   getStoredUser(): User | null {
@@ -240,8 +257,90 @@ class AuthService {
     }
   }
 
-  getStoredToken(): string | null {
-    return localStorage.getItem('auth_token');
+  // Private helper methods
+  private storeTokens(token: string, refreshToken: string): void {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('refresh_token', refreshToken);
+  }
+
+  private storeUser(user: User): void {
+    localStorage.setItem('auth_user', JSON.stringify(user));
+  }
+
+  private clearTokens(): void {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth_user');
+  }
+
+  // Development mock methods
+  private async mockLogin(credentials: LoginCredentials): Promise<AuthResponse> {
+    if (process.env.NODE_ENV !== 'development') {
+      throw new Error('Mock login only available in development');
+    }
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Mock users for development
+    const mockUsers = [
+      {
+        id: '1',
+        name: 'Dr. João Silva',
+        email: 'joao@autumnusjuris.com',
+        password: '123456',
+        role: 'admin' as const,
+        organizationName: 'Silva & Advogados',
+      },
+      {
+        id: '2',
+        name: 'Dra. Maria Santos',
+        email: 'maria@autumnusjuris.com',
+        password: '123456',
+        role: 'lawyer' as const,
+        organizationName: 'Santos Advocacia',
+      }
+    ];
+
+    const user = mockUsers.find(
+      u => u.email === credentials.email && u.password === credentials.password
+    );
+
+    if (!user) {
+      throw new Error('Credenciais inválidas');
+    }
+
+    const mockResponse: AuthResponse = {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organizationName: user.organizationName,
+      },
+      token: this.generateMockToken(user),
+      refreshToken: 'mock-refresh-token-' + Date.now(),
+      expiresIn: 3600,
+    };
+
+    this.storeTokens(mockResponse.token, mockResponse.refreshToken);
+    this.storeUser(mockResponse.user);
+    
+    return mockResponse;
+  }
+
+  private generateMockToken(user: any): string {
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const payload = btoa(JSON.stringify({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }));
+    const signature = btoa('mock-signature');
+    
+    return `${header}.${payload}.${signature}`;
   }
 }
 

@@ -22,6 +22,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   return (
     <div className="flex flex-col items-center gap-2">
       <div 
+        data-testid="loading-spinner"
         className={cn(
           `${sizeClasses[size]} border-slate-200 border-t-slate-900 rounded-full animate-spin`,
           className

@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   useUploadDocument, 
   useFolders, 
+  useCreateFolder,
   useFileValidation, 
   useDragAndDrop,
   useClipboardFiles 
@@ -48,6 +49,7 @@ import {
   DOCUMENT_SECURITY_LABELS,
   UploadProgressEvent
 } from '@/types/documents';
+import toast from 'react-hot-toast';
 
 const uploadSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -83,9 +85,13 @@ export default function DocumentUpload() {
   const [uploadFiles, setUploadFiles] = useState<FileUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [currentUploadIndex, setCurrentUploadIndex] = useState(-1);
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderDescription, setNewFolderDescription] = useState('');
 
   const { data: foldersData } = useFolders();
   const uploadMutation = useUploadDocument();
+  const createFolderMutation = useCreateFolder();
   const { validateFiles } = useFileValidation();
 
   const {
@@ -236,6 +242,26 @@ export default function DocumentUpload() {
     } finally {
       setIsUploading(false);
       setCurrentUploadIndex(-1);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    
+    try {
+      const newFolder = await createFolderMutation.mutateAsync({
+        name: newFolderName.trim(),
+        description: newFolderDescription.trim() || undefined,
+        parentId: undefined
+      });
+      
+      setValue('folderId', newFolder.id);
+      setShowNewFolderModal(false);
+      setNewFolderName('');
+      setNewFolderDescription('');
+      toast.success('Pasta criada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao criar pasta');
     }
   };
 
@@ -524,27 +550,37 @@ export default function DocumentUpload() {
                   </Select>
                 </div>
 
-                {foldersData?.folders && foldersData.folders.length > 0 && (
-                  <div>
+                <div>
+                  <div className="flex items-center justify-between">
                     <Label htmlFor="folderId">Pasta</Label>
-                    <Select onValueChange={(value) => setValue('folderId', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma pasta" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Nenhuma pasta</SelectItem>
-                        {foldersData.folders.map(folder => (
-                          <SelectItem key={folder.id} value={folder.id}>
-                            <div className="flex items-center">
-                              <FolderOpen className="w-4 h-4 mr-2" />
-                              {folder.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNewFolderModal(true)}
+                      className="flex items-center gap-1 text-xs"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Nova Pasta
+                    </Button>
                   </div>
-                )}
+                  <Select onValueChange={(value) => setValue('folderId', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma pasta ou crie uma nova" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhuma pasta</SelectItem>
+                      {foldersData?.folders?.map(folder => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          <div className="flex items-center">
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            {folder.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <div>
                   <Label htmlFor="tags">Tags</Label>
@@ -596,6 +632,87 @@ export default function DocumentUpload() {
           </Card>
         </div>
       </div>
+
+      {/* Modal para criar nova pasta */}
+      {showNewFolderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5" />
+                  Nova Pasta
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowNewFolderModal(false);
+                    setNewFolderName('');
+                    setNewFolderDescription('');
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="newFolderName">Nome da Pasta *</Label>
+                <Input
+                  id="newFolderName"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Digite o nome da pasta"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim()) {
+                      handleCreateFolder();
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="newFolderDescription">Descrição (Opcional)</Label>
+                <Textarea
+                  id="newFolderDescription"
+                  value={newFolderDescription}
+                  onChange={(e) => setNewFolderDescription(e.target.value)}
+                  placeholder="Digite uma descrição para a pasta"
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewFolderModal(false);
+                    setNewFolderName('');
+                    setNewFolderDescription('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleCreateFolder}
+                  disabled={!newFolderName.trim() || createFolderMutation.isPending}
+                >
+                  {createFolderMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar Pasta
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

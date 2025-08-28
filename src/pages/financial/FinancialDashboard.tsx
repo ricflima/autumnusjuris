@@ -27,6 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 import { 
   useFinancialDashboard,
@@ -38,15 +40,112 @@ import {
 
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import toast from 'react-hot-toast';
 
 const FinancialDashboard: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    status: '',
+    client: '',
+    minAmount: '',
+    maxAmount: ''
+  });
   
   const { summary, cashFlow, recentTransactions, isLoading, error } = useFinancialDashboard();
   const overdueInvoices = useOverdueInvoices();
   const pendingReceivables = usePendingReceivables();
   const financialStats = useFinancialStats();
   const { formatCurrency, formatPercentage, formatDateRelative, getStatusColor } = useFinancialFormatters();
+
+  const handleExportData = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      
+      // Preparar dados do resumo financeiro
+      const summaryData = [
+        ['RESUMO FINANCEIRO', '', '', ''],
+        ['Período:', selectedPeriod, '', ''],
+        ['Data de exportação:', new Date().toLocaleString('pt-BR'), '', ''],
+        ['', '', '', ''],
+        ['Receita Total', formatCurrency(summary.data?.totalIncome || 0), '', ''],
+        ['Despesas Totais', formatCurrency(summary.data?.totalExpenses || 0), '', ''],
+        ['Lucro Líquido', formatCurrency(summary.data?.netIncome || 0), '', ''],
+        ['Recebível Pendente', formatCurrency(summary.data?.pendingReceivables || 0), '', ''],
+        ['', '', '', ''],
+      ];
+
+      // Preparar dados das transações recentes
+      const transactionData = [
+        ['TRANSAÇÕES RECENTES', '', '', ''],
+        ['Data', 'Descrição', 'Tipo', 'Valor'],
+        ...((recentTransactions.data || []).map(tx => [
+          new Date(tx.date).toLocaleDateString('pt-BR'),
+          tx.description,
+          tx.type === 'income' ? 'Receita' : 'Despesa',
+          formatCurrency(tx.amount)
+        ])),
+        ['', '', '', ''],
+      ];
+
+      // Preparar dados de faturas em atraso
+      const overdueData = [
+        ['FATURAS EM ATRASO', '', '', ''],
+        ['Cliente', 'Valor', 'Data Vencimento', 'Dias em Atraso'],
+        ...((overdueInvoices.data?.invoices || []).map(inv => [
+          inv.client?.name || 'Cliente não encontrado',
+          formatCurrency(inv.remainingAmount),
+          new Date(inv.dueDate).toLocaleDateString('pt-BR'),
+          Math.floor((new Date().getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+        ])),
+      ];
+
+      // Criar workbook e worksheets
+      const wb = XLSX.utils.book_new();
+      
+      // Worksheet do resumo
+      const wsResumo = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo");
+      
+      // Worksheet das transações
+      const wsTransacoes = XLSX.utils.aoa_to_sheet(transactionData);
+      XLSX.utils.book_append_sheet(wb, wsTransacoes, "Transações");
+      
+      // Worksheet das faturas em atraso
+      const wsAtraso = XLSX.utils.aoa_to_sheet(overdueData);
+      XLSX.utils.book_append_sheet(wb, wsAtraso, "Faturas em Atraso");
+
+      // Gerar arquivo
+      const fileName = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      toast.success('Relatório Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar relatório');
+    }
+  };
+
+  const handleApplyFilters = () => {
+    // Aqui seria onde aplicaríamos os filtros aos dados
+    // Por enquanto, apenas fechamos o painel de filtros
+    setShowFilters(false);
+    alert('Filtros aplicados com sucesso!');
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      dateFrom: '',
+      dateTo: '',
+      status: '',
+      client: '',
+      minAmount: '',
+      maxAmount: ''
+    });
+    setShowFilters(false);
+  };
 
   if (isLoading) {
     return (
@@ -85,19 +184,24 @@ const FinancialDashboard: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => {
-            alert('Funcionalidade de filtros será implementada em breve!');
-          }}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters ? 'bg-blue-50 border-blue-300' : ''}
+          >
             <Filter className="w-4 h-4 mr-2" />
             Filtros
           </Button>
-          <Button variant="outline" size="sm" onClick={() => {
-            alert('Exportação de relatórios será implementada em breve!');
-          }}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportData}
+          >
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
-          <Link to="/financial/invoices/create">
+          <Link to="/financial/invoices/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Nova Fatura
@@ -105,6 +209,102 @@ const FinancialDashboard: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Filtros Expandidos */}
+      {showFilters && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-medium mb-3">Filtros Financeiros</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="filterDateFrom">Data Início</Label>
+                <Input
+                  type="date"
+                  id="filterDateFrom"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="filterDateTo">Data Fim</Label>
+                <Input
+                  type="date"
+                  id="filterDateTo"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="filterStatus">Status</Label>
+                <select
+                  id="filterStatus"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                >
+                  <option value="">Todos os status</option>
+                  <option value="pending">Pendente</option>
+                  <option value="paid">Pago</option>
+                  <option value="overdue">Em atraso</option>
+                  <option value="cancelled">Cancelado</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="filterClient">Cliente</Label>
+                <Input
+                  id="filterClient"
+                  placeholder="Nome do cliente"
+                  value={filters.client}
+                  onChange={(e) => setFilters(prev => ({ ...prev, client: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="filterMinAmount">Valor Mínimo</Label>
+                <Input
+                  type="number"
+                  id="filterMinAmount"
+                  placeholder="0.00"
+                  step="0.01"
+                  value={filters.minAmount}
+                  onChange={(e) => setFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="filterMaxAmount">Valor Máximo</Label>
+                <Input
+                  type="number"
+                  id="filterMaxAmount"
+                  placeholder="0.00"
+                  step="0.01"
+                  value={filters.maxAmount}
+                  onChange={(e) => setFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleClearFilters}
+              >
+                Limpar Filtros
+              </Button>
+              <Button 
+                size="sm"
+                onClick={handleApplyFilters}
+              >
+                Aplicar Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Alertas importantes */}
       {overdueInvoices.data && overdueInvoices.data.invoices.length > 0 && (

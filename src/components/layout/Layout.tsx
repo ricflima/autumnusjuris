@@ -217,21 +217,7 @@ export function Layout({ children }: LayoutProps) {
             <Menu className="h-6 w-6" />
           </button>
           
-          <div className="flex-1 px-4 flex justify-between items-center">
-            {/* Search bar */}
-            <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-start">
-              <div className="max-w-lg w-full lg:max-w-xs">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Pesquisar..."
-                    className="pl-10 w-full"
-                  />
-                </div>
-              </div>
-            </div>
-            
+          <div className="flex-1 px-4 flex justify-end items-center">
             {/* Right side */}
             <div className="ml-4 flex items-center md:ml-6 gap-3">
               {/* Notifications */}

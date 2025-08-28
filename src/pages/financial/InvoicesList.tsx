@@ -63,6 +63,7 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import toast from 'react-hot-toast';
 
 const InvoicesList: React.FC = () => {
   const [filters, setFilters] = useState<FinancialFilters>({
@@ -111,6 +112,97 @@ const InvoicesList: React.FC = () => {
       await sendInvoiceMutation.mutateAsync(invoiceId);
     } catch (error) {
       // Error é tratado no hook
+    }
+  };
+
+  const generateInvoicePDF = async (invoice: Invoice) => {
+    try {
+      const jsPDF = await import('jspdf');
+      const doc = new jsPDF.default();
+
+      // Header
+      doc.setFontSize(20);
+      doc.text('FATURA', 105, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text('AutumnusJuris - Sistema de Gestão Jurídica', 105, 30, { align: 'center' });
+      
+      // Invoice details
+      doc.setFontSize(14);
+      doc.text(`Fatura #${invoice.invoiceNumber}`, 20, 50);
+      
+      doc.setFontSize(10);
+      doc.text(`Data de Emissão: ${formatDate(invoice.createdAt)}`, 20, 60);
+      doc.text(`Data de Vencimento: ${formatDate(invoice.dueDate)}`, 20, 70);
+      doc.text(`Status: ${invoice.status.toUpperCase()}`, 20, 80);
+      
+      // Client info
+      doc.setFontSize(12);
+      doc.text('DADOS DO CLIENTE', 20, 100);
+      doc.setFontSize(10);
+      doc.text(`Cliente: ${invoice.client?.name || 'Cliente não encontrado'}`, 20, 110);
+      
+      // Case info
+      if (invoice.case?.title) {
+        doc.text(`Caso: ${invoice.case.title}`, 20, 120);
+      }
+      
+      // Items header
+      doc.setFontSize(12);
+      doc.text('ITENS DA FATURA', 20, 140);
+      
+      // Items table
+      let yPos = 155;
+      doc.setFontSize(9);
+      doc.text('Descrição', 20, yPos);
+      doc.text('Qtd', 120, yPos);
+      doc.text('Valor Unit.', 140, yPos);
+      doc.text('Total', 170, yPos);
+      
+      // Line under header
+      doc.line(20, yPos + 2, 190, yPos + 2);
+      yPos += 10;
+      
+      // Items
+      invoice.items.forEach((item) => {
+        const itemTotal = item.quantity * item.unitPrice;
+        doc.text(item.description.substring(0, 40), 20, yPos);
+        doc.text(item.quantity.toString(), 120, yPos);
+        doc.text(formatCurrency(item.unitPrice), 140, yPos);
+        doc.text(formatCurrency(itemTotal), 170, yPos);
+        yPos += 8;
+      });
+      
+      // Total
+      yPos += 10;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(12);
+      doc.text(`TOTAL: ${formatCurrency(invoice.totalAmount)}`, 170, yPos, { align: 'right' });
+      
+      // Notes
+      if (invoice.notes) {
+        yPos += 20;
+        doc.setFontSize(10);
+        doc.text('OBSERVAÇÕES:', 20, yPos);
+        yPos += 10;
+        const splitNotes = doc.splitTextToSize(invoice.notes, 170);
+        doc.text(splitNotes, 20, yPos);
+      }
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.text('Gerado pelo AutumnusJuris', 105, 280, { align: 'center' });
+      doc.text(new Date().toLocaleString('pt-BR'), 105, 285, { align: 'center' });
+      
+      // Save
+      doc.save(`fatura-${invoice.invoiceNumber}.pdf`);
+      toast.success('PDF gerado com sucesso!');
+      
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
     }
   };
 
@@ -414,7 +506,7 @@ const InvoicesList: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => generateInvoicePDF(invoice)}>
                             <Download className="w-4 h-4 mr-2" />
                             Download PDF
                           </DropdownMenuItem>

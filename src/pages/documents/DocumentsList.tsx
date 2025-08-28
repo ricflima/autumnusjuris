@@ -8,7 +8,6 @@ import {
   Search,
   Filter,
   FolderPlus,
-  Grid3X3,
   List,
   Download,
   Share2,
@@ -34,8 +33,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
-import { useDocuments, useFolders, useDeleteDocument, useDocumentStats } from '@/hooks/useDocuments';
+import { useDocuments, useFolders, useDeleteDocument, useDocumentStats, useCreateFolder } from '@/hooks/useDocuments';
 import { documentsService } from '@/services/documents.service';
 import { DocumentFilters, Document, DocumentFolder } from '@/types/documents';
 import toast from 'react-hot-toast';
@@ -60,14 +60,18 @@ export default function DocumentsList() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>();
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode] = useState<'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderDescription, setNewFolderDescription] = useState('');
 
   const { data: documentsData, isLoading, error, refetch } = useDocuments(filters);
   const { data: foldersData } = useFolders();
   const { data: stats } = useDocumentStats();
   const deleteDocumentMutation = useDeleteDocument();
+  const createFolderMutation = useCreateFolder();
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -107,6 +111,91 @@ export default function DocumentsList() {
     }
   };
 
+  const handleDownloadDocument = async (document: Document) => {
+    try {
+      // Simular download criando um arquivo mock
+      const mockContent = `Documento: ${document.title}\n\nTipo: ${document.category}\nTamanho: ${formatFileSize(document.fileSize)}\nCriado em: ${formatDate(document.createdAt)}\n\nEste é um documento simulado do sistema AutumnusJuris.\nO conteúdo real seria carregado do servidor.`;
+      
+      const blob = new Blob([mockContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `${document.fileName || document.title}.txt`;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Download iniciado!');
+    } catch (error) {
+      console.error('Erro ao fazer download:', error);
+      toast.error('Erro ao fazer download do documento');
+    }
+  };
+
+  const handleShareDocument = (document: Document) => {
+    const shareUrl = `${window.location.origin}/documents/${document.id}`;
+    const shareText = `Documento: ${document.title}\nTipo: ${document.category}\nTamanho: ${formatFileSize(document.fileSize)}\n\nVisualize em: ${shareUrl}`;
+    
+    const shareData = {
+      title: `Documento - ${document.title}`,
+      text: shareText,
+      url: shareUrl
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      navigator.share(shareData).then(() => {
+        toast.success('Documento compartilhado com sucesso!');
+      }).catch((error) => {
+        console.log('Erro ao compartilhar:', error);
+        fallbackShare(document, shareUrl, shareText);
+      });
+    } else {
+      fallbackShare(document, shareUrl, shareText);
+    }
+  };
+
+  const fallbackShare = (document: Document, shareUrl: string, shareText: string) => {
+    // Criar modal de compartilhamento
+    const shareModal = window.document.createElement('div');
+    shareModal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    `;
+    
+    shareModal.innerHTML = `
+      <div style="background: white; padding: 24px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600;">Compartilhar Documento</h3>
+        <p style="margin: 0 0 16px 0; color: #666;">${document.title}</p>
+        <textarea readonly style="width: 100%; height: 120px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: none; margin-bottom: 16px;">${shareText}</textarea>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button onclick="navigator.clipboard.writeText('${shareText}').then(() => { alert('Texto copiado!'); this.parentElement.parentElement.parentElement.remove(); })" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Copiar Texto</button>
+          <button onclick="navigator.clipboard.writeText('${shareUrl}').then(() => { alert('Link copiado!'); this.parentElement.parentElement.parentElement.remove(); })" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Copiar Link</button>
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
+        </div>
+      </div>
+    `;
+    
+    window.document.body.appendChild(shareModal);
+    
+    // Remover modal ao clicar fora
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) {
+        shareModal.remove();
+      }
+    });
+    
+    toast.success('Modal de compartilhamento aberto!');
+  };
+
   const toggleDocumentSelection = (id: string) => {
     setSelectedDocuments(prev =>
       prev.includes(id)
@@ -126,6 +215,25 @@ export default function DocumentsList() {
 
   const formatFileSize = (bytes: number) => {
     return documentsService.formatFileSize(bytes);
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    
+    try {
+      await createFolderMutation.mutateAsync({
+        name: newFolderName.trim(),
+        description: newFolderDescription.trim() || undefined,
+        parentId: selectedFolder
+      });
+      
+      setShowNewFolderModal(false);
+      setNewFolderName('');
+      setNewFolderDescription('');
+      toast.success('Pasta criada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao criar pasta');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -209,7 +317,7 @@ export default function DocumentsList() {
           
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm" asChild>
-              <Link to={`/documents/${document.id}/view`}>
+              <Link to={`/documents/${document.id}`}>
                 <Eye className="w-4 h-4" />
               </Link>
             </Button>
@@ -217,12 +325,23 @@ export default function DocumentsList() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open(document.downloadUrl, '_blank')}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDownloadDocument(document);
+              }}
+              type="button"
             >
               <Download className="w-4 h-4" />
             </Button>
             
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => handleShareDocument(document)}
+            >
               <Share2 className="w-4 h-4" />
             </Button>
             
@@ -318,7 +437,7 @@ export default function DocumentsList() {
           <div className="flex items-center justify-between">
             <div className="flex space-x-1">
               <Button variant="ghost" size="sm" asChild>
-                <Link to={`/documents/${document.id}/view`}>
+                <Link to={`/documents/${document.id}`}>
                   <Eye className="w-4 h-4" />
                 </Link>
               </Button>
@@ -326,12 +445,23 @@ export default function DocumentsList() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.open(document.downloadUrl, '_blank')}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDownloadDocument(document);
+                }}
+                type="button"
               >
                 <Download className="w-4 h-4" />
               </Button>
               
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => handleShareDocument(document)}
+              >
                 <Share2 className="w-4 h-4" />
               </Button>
             </div>
@@ -382,13 +512,7 @@ export default function DocumentsList() {
             </Link>
           </Button>
           
-          <Button variant="outline" onClick={() => {
-            const folderName = prompt('Nome da nova pasta:');
-            if (folderName && folderName.trim()) {
-              // TODO: Implementar criação de pasta
-              toast.success(`Pasta "${folderName}" criada com sucesso!`);
-            }
-          }}>
+          <Button variant="outline" onClick={() => setShowNewFolderModal(true)}>
             <FolderPlus className="w-4 h-4 mr-2" />
             Nova Pasta
           </Button>
@@ -476,24 +600,6 @@ export default function DocumentsList() {
             Filtros
           </Button>
           
-          <div className="flex items-center border rounded-lg">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className="rounded-r-none"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="rounded-l-none"
-            >
-              <List className="w-4 h-4" />
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -530,6 +636,27 @@ export default function DocumentsList() {
 
       {/* Breadcrumb */}
       {renderBreadcrumb()}
+
+      {/* Filtros Expandidos */}
+      {showFilters && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h3 className="font-medium mb-3">Filtros Avançados</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Use a busca acima para filtrar documentos por nome, ou selecione uma pasta específica.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowFilters(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bulk Actions */}
       {selectedDocuments.length > 0 && (
@@ -656,11 +783,7 @@ export default function DocumentsList() {
         </div>
       ) : (
         <>
-          <div className={
-            viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-              : 'space-y-2'
-          }>
+          <div className="space-y-2">
             {documentsData?.documents.map(renderDocumentCard)}
           </div>
 
@@ -743,6 +866,81 @@ export default function DocumentsList() {
             </div>
           )}
         </>
+      )}
+
+      {/* Modal para criar nova pasta */}
+      {showNewFolderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FolderPlus className="w-5 h-5" />
+                  Nova Pasta
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowNewFolderModal(false);
+                    setNewFolderName('');
+                    setNewFolderDescription('');
+                  }}
+                >
+                  <Plus className="w-4 h-4 rotate-45" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="newFolderName">Nome da Pasta *</Label>
+                <Input
+                  id="newFolderName"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Digite o nome da pasta"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim()) {
+                      handleCreateFolder();
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="newFolderDescription">Descrição (Opcional)</Label>
+                <Input
+                  id="newFolderDescription"
+                  value={newFolderDescription}
+                  onChange={(e) => setNewFolderDescription(e.target.value)}
+                  placeholder="Digite uma descrição para a pasta"
+                />
+              </div>
+              {selectedFolder && (
+                <div className="text-sm text-gray-600">
+                  Pasta será criada em: <Badge variant="secondary">{foldersData?.folders.find(f => f.id === selectedFolder)?.name || 'Pasta atual'}</Badge>
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewFolderModal(false);
+                    setNewFolderName('');
+                    setNewFolderDescription('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleCreateFolder}
+                  disabled={!newFolderName.trim() || createFolderMutation.isPending}
+                >
+                  {createFolderMutation.isPending ? 'Criando...' : 'Criar Pasta'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

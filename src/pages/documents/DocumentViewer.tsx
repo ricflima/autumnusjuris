@@ -68,14 +68,90 @@ export default function DocumentViewer() {
     }
   };
 
-  const handleDownload = () => {
-    if (documentData?.downloadUrl) {
-      window.open(documentData.downloadUrl, '_blank');
+  const handleDownload = async () => {
+    if (!documentData) return;
+    
+    try {
+      // Simular download criando um arquivo mock
+      const mockContent = `Documento: ${documentData.title}\n\nTipo: ${documentData.category}\nTamanho: ${formatFileSize(documentData.fileSize)}\nCriado em: ${formatDate(documentData.createdAt)}\n\nEste é um documento simulado do sistema AutumnusJuris.\nO conteúdo real seria carregado do servidor.`;
+      
+      const blob = new Blob([mockContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `${documentData.fileName || documentData.title}.txt`;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // No toast here since this is just functionality
+    } catch (error) {
+      console.error('Erro ao fazer download:', error);
     }
   };
 
   const handleShare = () => {
-    console.log('Share document', documentData?.id);
+    if (!documentData) return;
+    
+    const shareUrl = `${window.location.origin}/documents/${documentData.id}`;
+    const shareText = `Documento: ${documentData.title}\nTipo: ${documentData.category}\nTamanho: ${formatFileSize(documentData.fileSize)}\n\nVisualize em: ${shareUrl}`;
+    
+    const shareData = {
+      title: `Documento - ${documentData.title}`,
+      text: shareText,
+      url: shareUrl
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      navigator.share(shareData).then(() => {
+        console.log('Documento compartilhado com sucesso!');
+      }).catch((error) => {
+        console.log('Erro ao compartilhar:', error);
+        fallbackShare(documentData, shareUrl, shareText);
+      });
+    } else {
+      fallbackShare(documentData, shareUrl, shareText);
+    }
+  };
+
+  const fallbackShare = (document: any, shareUrl: string, shareText: string) => {
+    // Criar modal de compartilhamento
+    const shareModal = window.document.createElement('div');
+    shareModal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    `;
+    
+    shareModal.innerHTML = `
+      <div style="background: white; padding: 24px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600;">Compartilhar Documento</h3>
+        <p style="margin: 0 0 16px 0; color: #666;">${document.title}</p>
+        <textarea readonly style="width: 100%; height: 120px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: none; margin-bottom: 16px;">${shareText}</textarea>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button onclick="navigator.clipboard.writeText('${shareText}').then(() => { alert('Texto copiado!'); this.parentElement.parentElement.parentElement.remove(); })" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Copiar Texto</button>
+          <button onclick="navigator.clipboard.writeText('${shareUrl}').then(() => { alert('Link copiado!'); this.parentElement.parentElement.parentElement.remove(); })" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Copiar Link</button>
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
+        </div>
+      </div>
+    `;
+    
+    window.document.body.appendChild(shareModal);
+    
+    // Remover modal ao clicar fora
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) {
+        shareModal.remove();
+      }
+    });
   };
 
   const handleProcessOcr = () => {

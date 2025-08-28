@@ -137,7 +137,7 @@ export default function CreateProcess() {
         icon: '⚖️',
       });
 
-      navigate(`/processes/${newProcess.id}`);
+      navigate('/processes');
     },
     onError: (error: any) => {
       const message = error.message || 'Erro ao criar processo. Tente novamente.';

@@ -65,10 +65,6 @@ const AnalyticsNavigation: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Zap className="w-3 h-3" />
-            Fase 7 - Implementada
-          </Badge>
           <Button variant="outline" size="sm">
             <Settings className="w-4 h-4 mr-2" />
             Configurações
@@ -112,3 +108,4 @@ const AnalyticsNavigation: React.FC = () => {
 };
 
 export default AnalyticsNavigation;
+export { AnalyticsNavigation as Analytics };

@@ -103,9 +103,8 @@ export const useAuth = () => {
   // Mutation para refresh token
   const refreshTokenMutation = useMutation({
     mutationFn: authService.refreshToken,
-    onSuccess: (response) => {
-      const { user, token } = response;
-      setUser(user);
+    onSuccess: (token) => {
+      // Token refresh only returns a new token, not user data
       setToken(token);
     },
     onError: (error) => {

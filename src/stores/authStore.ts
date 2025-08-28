@@ -16,9 +16,14 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
+  
+  // Helper methods for external usage
+  getToken: () => string | null;
+  getRefreshToken: () => string | null;
+  setTokens: (token: string, refreshToken: string) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+const authStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
@@ -72,6 +77,15 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
       },
+
+      // Helper methods for external usage
+      getToken: () => get().token,
+      getRefreshToken: () => localStorage.getItem('refresh_token'),
+      setTokens: (token: string, refreshToken: string) => {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('refresh_token', refreshToken);
+        set({ token });
+      },
     }),
     {
       name: 'auth-storage',
@@ -84,3 +98,9 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Export hook for React components
+export const useAuthStore = authStore;
+
+// Export store instance for external usage
+export { authStore };

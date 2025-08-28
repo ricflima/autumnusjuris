@@ -88,61 +88,11 @@ export default function ProcessCalendar() {
     queryFn: () => processesService.getOverdueDeadlines(),
   });
 
-  // Query para buscar audiências (simulado - usaremos dados mock)
-  const mockHearings: ProcessHearing[] = [
-    {
-      id: '1',
-      processId: '1',
-      title: 'Audiência de Instrução e Julgamento',
-      date: '2025-07-15',
-      time: '14:00',
-      location: '1ª Vara Cível - Sala 1',
-      type: 'instruction',
-      status: 'scheduled',
-      participants: [],
-      createdAt: '2025-06-01T10:00:00Z',
-      updatedAt: '2025-06-01T10:00:00Z'
-    },
-    {
-      id: '2',
-      processId: '3',
-      title: 'Audiência de Conciliação',
-      date: '2025-08-10',
-      time: '09:30',
-      location: '1ª Vara do Trabalho - Sala 3',
-      type: 'conciliation',
-      status: 'scheduled',
-      participants: [],
-      createdAt: '2025-07-05T10:00:00Z',
-      updatedAt: '2025-07-05T10:00:00Z'
-    },
-    {
-      id: '3',
-      processId: '2',
-      title: 'Audiência de Julgamento',
-      date: '2025-08-22',
-      time: '10:00',
-      location: '2ª Vara de Família - Sala 2',
-      type: 'instruction',
-      status: 'scheduled',
-      participants: [],
-      createdAt: '2025-07-10T10:00:00Z',
-      updatedAt: '2025-07-10T10:00:00Z'
-    },
-    {
-      id: '4',
-      processId: '1',
-      title: 'Perícia Técnica',
-      date: '2025-09-05',
-      time: '15:00',
-      location: 'Escritório Pericial - Centro',
-      type: 'other',
-      status: 'scheduled',
-      participants: [],
-      createdAt: '2025-08-01T10:00:00Z',
-      updatedAt: '2025-08-01T10:00:00Z'
-    }
-  ];
+  // Query para buscar audiências
+  const { data: hearingsData } = useQuery({
+    queryKey: ['hearings'],
+    queryFn: () => processesService.getProcessHearings('all'),
+  });
 
   // Combinar todos os eventos
   const calendarEvents: CalendarEvent[] = useMemo(() => {
@@ -187,8 +137,8 @@ export default function ProcessCalendar() {
     }
 
     // Adicionar audiências
-    if (filters.showHearings) {
-      mockHearings.forEach(hearing => {
+    if (filters.showHearings && hearingsData) {
+      hearingsData.forEach(hearing => {
         events.push({
           id: `hearing-${hearing.id}`,
           title: hearing.title,
@@ -204,7 +154,7 @@ export default function ProcessCalendar() {
     }
 
     return events;
-  }, [upcomingDeadlines, overdueDeadlines, filters]);
+  }, [upcomingDeadlines, overdueDeadlines, hearingsData, filters]);
 
   // Eventos do mês atual
   const currentMonthEvents = useMemo(() => {
@@ -283,12 +233,8 @@ export default function ProcessCalendar() {
   // Mutation para criar novo evento
   const createEventMutation = useMutation({
     mutationFn: async (eventData: typeof newEvent) => {
-      // Simular criação de evento
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (eventData.type === 'hearing') {
         const newHearing = {
-          id: Date.now().toString(),
           processId: eventData.processId || '1',
           title: eventData.title,
           description: eventData.description,
@@ -296,32 +242,27 @@ export default function ProcessCalendar() {
           time: eventData.time,
           location: eventData.location,
           type: 'instruction' as const,
-          status: 'scheduled' as const,
           participants: eventData.participants.split(',').map(p => p.trim()).filter(Boolean),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
         };
-        return newHearing;
+        return await processesService.createProcessHearing(newHearing.processId, newHearing);
       } else {
         const newDeadline = {
-          id: Date.now().toString(),
           processId: eventData.processId || '1',
           type: 'other' as const,
           title: eventData.title,
           description: eventData.description,
           dueDate: `${eventData.date}T${eventData.time || '23:59'}:00Z`,
-          status: 'pending' as const,
           priority: eventData.priority,
           isRecurring: false,
           attachments: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
         };
-        return newDeadline;
+        return await processesService.createProcessDeadline(newDeadline.processId, newDeadline);
       }
     },
     onSuccess: () => {
       toast.success('Evento criado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['deadlines'] });
+      queryClient.invalidateQueries({ queryKey: ['hearings'] });
       setShowNewEventModal(false);
       setNewEvent({
         type: 'hearing',

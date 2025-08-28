@@ -163,38 +163,28 @@ const AnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header com filtros */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics Avançado</h1>
-          <p className="text-gray-600">Business Intelligence e análise de performance</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={filters.period} onValueChange={(value: any) => 
-            setFilters(prev => ({ ...prev, period: value }))}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Última Semana</SelectItem>
-              <SelectItem value="month">Último Mês</SelectItem>
-              <SelectItem value="quarter">Último Trimestre</SelectItem>
-              <SelectItem value="year">Último Ano</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Atualizar
-          </Button>
-        </div>
+      {/* Filtros */}
+      <div className="flex items-center justify-end gap-3">
+        <Select value={filters.period} onValueChange={(value: any) => 
+          setFilters(prev => ({ ...prev, period: value }))}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">Última Semana</SelectItem>
+            <SelectItem value="month">Último Mês</SelectItem>
+            <SelectItem value="quarter">Último Trimestre</SelectItem>
+            <SelectItem value="year">Último Ano</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm">
+          <Filter className="w-4 h-4 mr-2" />
+          Filtros
+        </Button>
+        <Button variant="outline" size="sm">
+          <Download className="w-4 h-4 mr-2" />
+          Exportar
+        </Button>
       </div>
 
       {/* Métricas Principais */}

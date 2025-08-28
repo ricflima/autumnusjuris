@@ -540,6 +540,11 @@ class ProcessesService {
   async getProcessHearings(processId: string): Promise<ProcessHearing[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
     
+    if (processId === 'all') {
+      return MOCK_HEARINGS
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    
     return MOCK_HEARINGS
       .filter(h => h.processId === processId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -669,6 +674,50 @@ class ProcessesService {
       processesByStatus,
       processesByType
     };
+  }
+
+  async createProcessHearing(processId: string, data: any): Promise<ProcessHearing> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const newHearing: ProcessHearing = {
+      id: Date.now().toString(),
+      processId,
+      title: data.title,
+      description: data.description,
+      date: data.date,
+      time: data.time,
+      location: data.location,
+      type: data.type || 'instruction',
+      status: 'scheduled',
+      participants: data.participants || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    MOCK_HEARINGS.push(newHearing);
+    return newHearing;
+  }
+
+  async createProcessDeadline(processId: string, data: any): Promise<ProcessDeadline> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const newDeadline: ProcessDeadline = {
+      id: Date.now().toString(),
+      processId,
+      type: data.type || 'other',
+      title: data.title,
+      description: data.description,
+      dueDate: data.dueDate,
+      status: 'pending',
+      priority: data.priority || 'medium',
+      isRecurring: data.isRecurring || false,
+      attachments: data.attachments || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    MOCK_DEADLINES.push(newDeadline);
+    return newDeadline;
   }
 }
 

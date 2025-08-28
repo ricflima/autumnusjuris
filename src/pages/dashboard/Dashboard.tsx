@@ -289,71 +289,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Ações rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-            Ações Rápidas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              to="/cases/new"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                <Plus className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Novo Caso</h4>
-                <p className="text-xs text-gray-500">Cadastrar novo caso</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/clients/new"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                <Plus className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Novo Cliente</h4>
-                <p className="text-xs text-gray-500">Cadastrar cliente</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/processes/new"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                <Plus className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Novo Processo</h4>
-                <p className="text-xs text-gray-500">Cadastrar processo</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/calendar"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                <Calendar className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Ver Agenda</h4>
-                <p className="text-xs text-gray-500">Compromissos e prazos</p>
-              </div>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Recent Activity */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Cases */}
@@ -568,11 +503,13 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <Link to="/tasks">
-              <Button variant="outline" className="w-full" size="sm">
-                Ver todas as tarefas
-              </Button>
-            </Link>
+            <div className="pt-4">
+              <Link to="/tasks">
+                <Button variant="outline" className="w-full" size="sm">
+                  Ver todas as tarefas
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

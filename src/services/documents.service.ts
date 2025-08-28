@@ -915,6 +915,23 @@ class DocumentsService {
     };
     return colors[priority];
   }
+  
+  // Options methods for form selects
+  getCategoryOptions(): Record<string, string> {
+    return DOCUMENT_CATEGORY_LABELS;
+  }
+  
+  getStatusOptions(): Record<string, string> {
+    return DOCUMENT_STATUS_LABELS;
+  }
+  
+  getSecurityOptions(): Record<string, string> {
+    return DOCUMENT_SECURITY_LABELS;
+  }
+  
+  getPriorityOptions(): Record<string, string> {
+    return DOCUMENT_PRIORITY_LABELS;
+  }
 }
 
 export const documentsService = new DocumentsService();

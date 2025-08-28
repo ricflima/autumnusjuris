@@ -1,4 +1,4 @@
-// src/App.tsx - ATUALIZADO PARA FASE 6 - GESTÃO FINANCEIRA
+// src/App.tsx - Sistema de Gestão Jurídica
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -11,7 +11,7 @@ import { queryClient } from '@/lib/queryClient';
 import { ProtectedRoute, PublicRoute } from '@/components/common/ProtectedRoute';
 import { Layout } from '@/components/layout/Layout';
 
-// Pages
+// Pages - Direct imports for better UX and reliability
 import LoginPage from '@/pages/auth/LoginPage';
 import Dashboard from '@/pages/dashboard/Dashboard';
 
@@ -24,6 +24,7 @@ import EditCase from '@/pages/cases/EditCase';
 // Clients
 import ClientsList from '@/pages/clients/ClientsList';
 import CreateClient from '@/pages/clients/CreateClient';
+import EditClient from '@/pages/clients/EditClient';
 import ClientDetail from '@/pages/clients/ClientDetail';
 
 // Processes
@@ -37,9 +38,10 @@ import EditProcess from '@/pages/processes/EditProcess';
 import DocumentsList from '@/pages/documents/DocumentsList';
 import DocumentUpload from '@/pages/documents/DocumentUpload';
 import DocumentViewer from '@/pages/documents/DocumentViewer';
+import EditDocument from '@/pages/documents/EditDocument';
 import TemplateLibrary from '@/pages/documents/TemplateLibrary';
 
-// Financial - NOVO PARA FASE 6
+// Financial
 import FinancialDashboard from '@/pages/financial/FinancialDashboard';
 import InvoicesList from '@/pages/financial/InvoicesList';
 import CreateInvoice from '@/pages/financial/CreateInvoice';
@@ -75,7 +77,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Routes>
-        {/* Rotas públicas (apenas para usuários NÃO logados) */}
+        {/* Public Routes */}
         <Route
           path="/login"
           element={
@@ -85,13 +87,18 @@ function App() {
           }
         />
 
-        {/* Redirect da raiz para dashboard se logado, senão para login */}
+        {/* Protected Routes */}
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
         />
-
-        {/* Rotas protegidas (apenas para usuários logados) */}
+        
         <Route
           path="/dashboard"
           element={
@@ -103,7 +110,7 @@ function App() {
           }
         />
 
-        {/* === CASOS === */}
+        {/* Cases Routes */}
         <Route
           path="/cases"
           element={
@@ -114,7 +121,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/cases/new"
           element={
@@ -125,7 +131,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/cases/:id"
           element={
@@ -136,7 +141,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/cases/:id/edit"
           element={
@@ -148,7 +152,7 @@ function App() {
           }
         />
 
-        {/* === CLIENTES === */}
+        {/* Clients Routes */}
         <Route
           path="/clients"
           element={
@@ -159,7 +163,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/clients/new"
           element={
@@ -170,7 +173,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/clients/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EditClient />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/clients/:id"
           element={
@@ -182,22 +194,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/clients/:id/edit"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ComingSoon 
-                  title="Editar Cliente" 
-                  message="A página de edição do cliente está em desenvolvimento"
-                  estimatedDate="Próxima atualização"
-                />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* === PROCESSOS === */}
+        {/* Processes Routes */}
         <Route
           path="/processes"
           element={
@@ -208,7 +205,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/processes/create"
           element={
@@ -219,7 +215,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/processes/:id"
           element={
@@ -230,7 +225,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/processes/:id/edit"
           element={
@@ -241,8 +235,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* === CALENDÁRIO === */}
         <Route
           path="/calendar"
           element={
@@ -254,7 +246,7 @@ function App() {
           }
         />
 
-        {/* === DOCUMENTOS === */}
+        {/* Documents Routes */}
         <Route
           path="/documents"
           element={
@@ -265,7 +257,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
         <Route
           path="/documents/upload"
           element={
@@ -276,7 +267,26 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+        <Route
+          path="/documents/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentViewer />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/documents/:id/edit"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EditDocument />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/documents/templates"
           element={
@@ -287,19 +297,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
-        <Route
-          path="/documents/:id/view"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <DocumentViewer />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
 
-        {/* === FINANCEIRO - NOVO PARA FASE 6 === */}
+        {/* Financial Routes */}
         <Route
           path="/financial"
           element={
@@ -310,8 +309,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Faturas */}
         <Route
           path="/financial/invoices"
           element={
@@ -322,9 +319,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
-          path="/financial/invoices/create"
+          path="/financial/invoices/new"
           element={
             <ProtectedRoute>
               <Layout>
@@ -333,7 +329,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/financial/invoices/:id"
           element={
@@ -344,7 +339,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/financial/invoices/:id/edit"
           element={
@@ -355,8 +349,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Pagamentos */}
         <Route
           path="/financial/payments"
           element={
@@ -367,9 +359,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
-          path="/financial/payments/create"
+          path="/financial/payments/new"
           element={
             <ProtectedRoute>
               <Layout>
@@ -378,8 +369,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Despesas */}
         <Route
           path="/financial/expenses"
           element={
@@ -390,9 +379,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
-          path="/financial/expenses/create"
+          path="/financial/expenses/new"
           element={
             <ProtectedRoute>
               <Layout>
@@ -401,8 +389,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Relatórios Financeiros */}
+        <Route
+          path="/financial/transactions"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TransactionsList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/financial/reports"
           element={
@@ -414,19 +410,19 @@ function App() {
           }
         />
 
-        {/* Transações */}
+        {/* Analytics Routes */}
         <Route
-          path="/financial/transactions"
+          path="/analytics/*"
           element={
             <ProtectedRoute>
               <Layout>
-                <TransactionsList />
+                <Analytics />
               </Layout>
             </ProtectedRoute>
           }
         />
 
-        {/* === OUTROS MÓDULOS === */}
+        {/* Settings Routes */}
         <Route
           path="/settings"
           element={
@@ -438,31 +434,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ComingSoon 
-                  title="Perfil" 
-                  message="A página de perfil está em desenvolvimento" 
-                  estimatedDate="Fase 7"
-                />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        // No App.tsx - uma rota que captura todas as subrotas:
-        <Route path="/analytics/*" element={
-          <ProtectedRoute>
-            <Layout>
-              <Analytics />
-            </Layout>
-          </ProtectedRoute>
-          } 
-        />
-
+        {/* Tasks Routes */}
         <Route
           path="/tasks"
           element={
@@ -474,6 +446,7 @@ function App() {
           }
         />
 
+        {/* Search Routes */}
         <Route
           path="/search"
           element={
@@ -485,32 +458,64 @@ function App() {
           }
         />
 
-        {/* === PÁGINAS DE ERRO === */}
+        {/* Coming Soon Routes */}
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ComingSoon title="Relatórios" message="Esta funcionalidade está em desenvolvimento" />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Error Routes */}
         <Route
           path="/unauthorized"
-          element={<Unauthorized />}
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Unauthorized />
+              </Layout>
+            </ProtectedRoute>
+          }
         />
 
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
+        {/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* Toast notifications */}
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-        }}
-      />
+        {/* Global Components */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
 
-      {/* React Query DevTools - apenas em desenvolvimento */}
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        {/* Development Tools */}
+        {import.meta.env.DEV && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
     </QueryClientProvider>
   );
 }
