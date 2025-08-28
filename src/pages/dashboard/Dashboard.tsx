@@ -436,33 +436,59 @@ export default function Dashboard() {
       {/* Próximas audiências e tarefas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Próximas audiências */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Calendar className="w-5 h-5 text-purple-600" />
               Próximas Audiências
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="border-l-4 border-red-400 pl-3 py-2">
-              <p className="font-medium text-sm text-gray-900">Audiência Trabalhista</p>
-              <p className="text-xs text-gray-600">Hoje, 14:30</p>
-              <p className="text-xs text-red-600">Caso: Silva vs Empresa XYZ</p>
+          <CardContent className="flex flex-col h-full">
+            <div className="flex-1 space-y-3">
+              <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg h-[5.5rem] flex items-center">
+                <div className="flex-1 min-w-0 px-4 py-2">
+                  <p className="text-sm font-medium text-gray-900">Audiência Trabalhista</p>
+                  <p className="text-xs text-gray-600">Hoje, 14:30</p>
+                  <p className="text-xs text-red-600">Caso: Silva vs Empresa XYZ</p>
+                </div>
+                <div className="px-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-red-600" />
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    Ver
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border-l-4 border-yellow-500 bg-yellow-50 rounded-r-lg h-[5.5rem] flex items-center">
+                <div className="flex-1 min-w-0 px-4 py-2">
+                  <p className="text-sm font-medium text-gray-900">Conciliação</p>
+                  <p className="text-xs text-gray-600">Amanhã, 10:00</p>
+                  <p className="text-xs text-yellow-600">Caso: Divórcio Santos</p>
+                </div>
+                <div className="px-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-yellow-600" />
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    Ver
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border-l-4 border-blue-500 bg-blue-50 rounded-r-lg h-[5.5rem] flex items-center">
+                <div className="flex-1 min-w-0 px-4 py-2">
+                  <p className="text-sm font-medium text-gray-900">Sessão de Julgamento</p>
+                  <p className="text-xs text-gray-600">15/03, 15:00</p>
+                  <p className="text-xs text-blue-600">Caso: Ação de Cobrança ABC</p>
+                </div>
+                <div className="px-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    Ver
+                  </Button>
+                </div>
+              </div>
             </div>
             
-            <div className="border-l-4 border-yellow-400 pl-3 py-2">
-              <p className="font-medium text-sm text-gray-900">Conciliação</p>
-              <p className="text-xs text-gray-600">Amanhã, 10:00</p>
-              <p className="text-xs text-yellow-600">Caso: Divórcio Santos</p>
-            </div>
-            
-            <div className="border-l-4 border-blue-400 pl-3 py-2">
-              <p className="font-medium text-sm text-gray-900">Sessão de Julgamento</p>
-              <p className="text-xs text-gray-600">15/03, 15:00</p>
-              <p className="text-xs text-blue-600">Caso: Ação de Cobrança ABC</p>
-            </div>
-            
-            <div className="pt-4">
+            <div className="pt-4 mt-auto">
               <Link to="/calendar">
                 <Button variant="outline" className="w-full" size="sm">
                   Ver agenda completa
@@ -473,39 +499,59 @@ export default function Dashboard() {
         </Card>
 
         {/* Tarefas importantes */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Clock className="w-5 h-5 text-orange-600" />
               Tarefas Urgentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Contestação - Prazo hoje</p>
-                <p className="text-xs text-red-600">Vence às 17:00</p>
+          <CardContent className="flex flex-col h-full">
+            <div className="flex-1 space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg h-[5.5rem] flex items-center p-3">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-sm font-medium text-gray-900">Contestação - Prazo hoje</p>
+                  <p className="text-xs text-gray-600">Vence às 17:00</p>
+                  <p className="text-xs text-red-600">Processo: Silva vs Empresa XYZ</p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-2">
+                  Fazer
+                </Button>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg h-[5.5rem] flex items-center p-3">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-sm font-medium text-gray-900">Documentos cliente</p>
+                  <p className="text-xs text-gray-600">Vence amanhã</p>
+                  <p className="text-xs text-yellow-600">Cliente: João Santos Silva</p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-2">
+                  Fazer
+                </Button>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg h-[5.5rem] flex items-center p-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0 ml-3">
+                  <p className="text-sm font-medium text-gray-900">Relatório mensal</p>
+                  <p className="text-xs text-gray-600">Em 3 dias</p>
+                  <p className="text-xs text-blue-600">Relatório: Atividades Janeiro</p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-2">
+                  Fazer
+                </Button>
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Documentos cliente</p>
-                <p className="text-xs text-yellow-600">Vence amanhã</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Relatório mensal</p>
-                <p className="text-xs text-blue-600">Em 3 dias</p>
-              </div>
-            </div>
-            
-            <div className="pt-4">
+            <div className="pt-4 mt-auto">
               <Link to="/tasks">
                 <Button variant="outline" className="w-full" size="sm">
                   Ver todas as tarefas

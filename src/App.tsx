@@ -69,13 +69,16 @@ import SearchResults from '@/pages/search/SearchResults';
 // Phase 9 - Advanced Features
 import { DigitalSignatures } from '@/pages/signatures/DigitalSignatures';
 import { AIDocumentAnalysis } from '@/pages/ai/AIDocumentAnalysis';
+import { NotificationsPlaceholder } from '@/pages/notifications/NotificationsPlaceholder';
+import { TribunalIntegrations } from '@/pages/integrations/TribunalIntegrations';
+import { WhatsAppBusiness } from '@/pages/integrations/WhatsAppBusiness';
+import { AdvancedReports } from '@/pages/reports/AdvancedReports';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
 
-// Placeholder pages
-import ComingSoon from '@/pages/common/ComingSoon';
+// Placeholder pages - removido ComingSoon pois todas as páginas foram implementadas
 
 function App() {
   return (
@@ -492,7 +495,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon title="Integração com Tribunais" message="Sistema de integração com tribunais em desenvolvimento" />
+                <TribunalIntegrations />
               </Layout>
             </ProtectedRoute>
           }
@@ -503,7 +506,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon title="Notificações Avançadas" message="Sistema de notificações push avançadas em desenvolvimento" />
+                <NotificationsPlaceholder />
               </Layout>
             </ProtectedRoute>
           }
@@ -514,19 +517,19 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon title="WhatsApp Business" message="Integração com WhatsApp Business em desenvolvimento" />
+                <WhatsAppBusiness />
               </Layout>
             </ProtectedRoute>
           }
         />
 
-        {/* Coming Soon Routes */}
+        {/* Advanced Reports */}
         <Route
           path="/reports"
           element={
             <ProtectedRoute>
               <Layout>
-                <ComingSoon title="Relatórios" message="Esta funcionalidade está em desenvolvimento" />
+                <AdvancedReports />
               </Layout>
             </ProtectedRoute>
           }
