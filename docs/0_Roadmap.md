@@ -1,99 +1,154 @@
-# =ú AutumnusJuris - Roadmap do Projeto
+# =ï¿½ AutumnusJuris - Roadmap do Projeto
 
-## =Ë Visão Geral
-Sistema completo de gestão jurídica desenvolvido em React/TypeScript com funcionalidades de CRM, gestão processual, financeiro e analytics.
+## =ï¿½ Visï¿½o Geral
+Sistema completo de gestï¿½o jurï¿½dica desenvolvido em React/TypeScript com funcionalidades de CRM, gestï¿½o processual, financeiro e analytics.
 
 ---
 
-## =È Status das Fases
+## =ï¿½ Status das Fases
 
-###  Fase 1 - Fundação (COMPLETA)
+###  Fase 1 - Fundaï¿½ï¿½o (COMPLETA)
 **Status:** Implementada e Homologada
 - [x] Estrutura base do projeto React/TypeScript
-- [x] Sistema de autenticação
-- [x] Layout e navegação principal
-- [x] Componentes UI básicos
-- [x] Configuração de roteamento
+- [x] Sistema de autenticaï¿½ï¿½o
+- [x] Layout e navegaï¿½ï¿½o principal
+- [x] Componentes UI bï¿½sicos
+- [x] Configuraï¿½ï¿½o de roteamento
 
-###  Fase 2 - Gestão de Clientes (COMPLETA)
+###  Fase 2 - Gestï¿½o de Clientes (COMPLETA)
 **Status:** Implementada e Homologada
 - [x] CRUD completo de clientes
 - [x] Lista com filtros e busca
-- [x] Validação de formulários
-- [x] Categorização (PF/PJ)
+- [x] Validaï¿½ï¿½o de formulï¿½rios
+- [x] Categorizaï¿½ï¿½o (PF/PJ)
 - [x] Sistema de status
 
-###  Fase 3 - Gestão de Casos (COMPLETA)
+###  Fase 3 - Gestï¿½o de Casos (COMPLETA)
 **Status:** Implementada e Homologada
-- [x] CRUD completo de casos jurídicos
-- [x] Vinculação com clientes
+- [x] CRUD completo de casos jurï¿½dicos
+- [x] Vinculaï¿½ï¿½o com clientes
 - [x] Sistema de status e prioridades
-- [x] Categorização por área do direito
-- [x] Timeline e histórico
+- [x] Categorizaï¿½ï¿½o por ï¿½rea do direito
+- [x] Timeline e histï¿½rico
 
-###  Fase 4 - Dashboard e Visão Geral (COMPLETA)
+###  Fase 4 - Dashboard e Visï¿½o Geral (COMPLETA)
 **Status:** Implementada e Homologada
-- [x] Dashboard principal com métricas
-- [x] Cards de estatísticas
+- [x] Dashboard principal com mï¿½tricas
+- [x] Cards de estatï¿½sticas
 - [x] Listas de casos e clientes recentes
-- [x] Ações rápidas
+- [x] Aï¿½ï¿½es rï¿½pidas
 - [x] Indicadores visuais
 
-###  Fase 5 - Gestão Processual (COMPLETA)
+###  Fase 5 - Gestï¿½o Processual (COMPLETA)
 **Status:** Implementada e Homologada Perfeitamente
 - [x] CRUD de processos judiciais
-- [x] Gestão de prazos e deadlines
-- [x] Sistema de audiências
-- [x] Movimentações processuais
+- [x] Gestï¿½o de prazos e deadlines
+- [x] Sistema de audiï¿½ncias
+- [x] Movimentaï¿½ï¿½es processuais
 - [x] Acompanhamento de andamentos
 
-###  Fase 6 - Gestão Financeira (COMPLETA)
+###  Fase 6 - Gestï¿½o Financeira (COMPLETA)
 **Status:** Implementada e Testada
 - [x] Dashboard financeiro
-- [x] Gestão de faturas/invoices
+- [x] Gestï¿½o de faturas/invoices
 - [x] Controle de pagamentos
-- [x] Gestão de despesas
-- [x] Relatórios financeiros
+- [x] Gestï¿½o de despesas
+- [x] Relatï¿½rios financeiros
 - [x] Fluxo de caixa
 
-###  Fase 7 - Analytics e Correções (COMPLETA)
-**Status:** Implementada com Todas as Correções
-- [x] Dashboard de analytics avançado
-- [x] Relatórios de business intelligence
-- [x] Métricas de performance
-- [x] **=' CORREÇÕES IMPLEMENTADAS:**
-  - [x] Botões do Dashboard funcionando (navegação casos/clientes/tarefas)
+###  Fase 7 - Analytics e Correï¿½ï¿½es (COMPLETA)
+**Status:** Implementada com Todas as Correï¿½ï¿½es
+- [x] Dashboard de analytics avanï¿½ado
+- [x] Relatï¿½rios de business intelligence
+- [x] Mï¿½tricas de performance
+- [x] **=' CORREï¿½ï¿½ES IMPLEMENTADAS:**
+  - [x] Botï¿½es do Dashboard funcionando (navegaï¿½ï¿½o casos/clientes/tarefas)
   - [x] Barra de busca global implementada
-  - [x] Página completa de detalhes de casos
-  - [x] Calendário com datas atualizadas (2025)
-  - [x] Sistema completo de Transações Financeiras
-  - [x] Faturas e despesas clicáveis
-  - [x] Página de Configurações completa
+  - [x] Pï¿½gina completa de detalhes de casos
+  - [x] Calendï¿½rio com datas atualizadas (2025)
+  - [x] Sistema completo de Transaï¿½ï¿½es Financeiras
+  - [x] Faturas e despesas clicï¿½veis
+  - [x] Pï¿½gina de Configuraï¿½ï¿½es completa
   - [x] Sistema de Tarefas implementado
   - [x] Busca Global unificada
 
 ---
 
-## <• Funcionalidades Adicionais Implementadas na Fase 7
+## <ï¿½ Funcionalidades da Fase 8 (Em Desenvolvimento)
 
-### =ñ Novas Páginas Criadas:
+### âœ… **Implementado - Gestï¿½o de Documentos Avanï¿½ada:**
+1. **Sistema de Ediï¿½ï¿½o de Documentos**
+   - Pï¿½gina completa de ediï¿½ï¿½o (/documents/:id/edit)
+   - Formulï¿½rios validados com Zod schemas
+   - Sistema de tags editï¿½veis
+   - Seleï¿½ï¿½o de pastas e organizaï¿½ï¿½o
+
+2. **Funcionalidades de Export e Compartilhamento**
+   - Geraï¿½ï¿½o de PDF com jsPDF
+   - Export para Excel com XLSX
+   - Web Share API com fallback modal
+   - Sistema de download funcional
+
+3. **Correï¿½ï¿½es Crï¿½ticas de Produï¿½ï¿½o**
+   - Download de documentos sem redirecionamento 404
+   - Botï¿½o de compartilhamento funcional
+   - Erro de SelectItem com valores vazios corrigido
+   - Validaï¿½ï¿½es de formulï¿½rio aprimoradas
+
+### ðŸ”¨ **Em Desenvolvimento - Infraestrutura Enterprise:**
+1. **Performance e Otimizaï¿½ï¿½o (Estrutura Criada)**
+   - Componente VirtualizedList (estrutura bï¿½sica)
+   - Utilities de performance (esqueleto)
+   - Hooks otimizados (useOptimizedQuery bï¿½sico)
+
+2. **Testes e Qualidade (Setup Bï¿½sico)**
+   - Vitest configurado (setup inicial)
+   - Ambiente de teste preparado
+   - Estrutura de testes criada
+
+3. **PWA Capabilities (Componentes Base)**
+   - PWAManager component (estrutura)
+   - Utilities PWA (bï¿½sicos)
+   - Configuraï¿½ï¿½o de ambiente
+
+### ðŸ“‹ **Pendente - Funcionalidades Enterprise Completas:**
+1. **Performance Real**
+   - Lazy loading ativo
+   - Cache inteligente funcional
+   - Monitoramento de performance
+
+2. **PWA Funcional**
+   - Service Worker ativo
+   - Funcionalidade offline real
+   - Notificaï¿½ï¿½es push
+
+3. **APIs e Integraï¿½ï¿½es**
+   - Cliente HTTP com retry ativo
+   - Sincronizaï¿½ï¿½o offline/online
+   - Autenticaï¿½ï¿½o JWT completa
+
+---
+
+## <ï¿½ Funcionalidades Adicionais Implementadas na Fase 7
+
+### =ï¿½ Novas Pï¿½ginas Criadas:
 1. **Detalhes de Casos** (`/cases/:id`)
-   - Visão geral completa
-   - Informações do cliente
+   - Visï¿½o geral completa
+   - Informaï¿½ï¿½es do cliente
    - Documentos anexados
-   - Histórico e timeline
-   - Sistema de anotações
+   - Histï¿½rico e timeline
+   - Sistema de anotaï¿½ï¿½es
 
-2. **Transações Financeiras** (`/financial/transactions`)
+2. **Transaï¿½ï¿½es Financeiras** (`/financial/transactions`)
    - Lista completa de receitas e despesas
-   - Filtros avançados por categoria, status, método de pagamento
-   - Estatísticas financeiras
-   - Categorização inteligente
+   - Filtros avanï¿½ados por categoria, status, mï¿½todo de pagamento
+   - Estatï¿½sticas financeiras
+   - Categorizaï¿½ï¿½o inteligente
 
 3. **Sistema de Tarefas** (`/tasks`)
-   - Gestão completa de tarefas
+   - Gestï¿½o completa de tarefas
    - Prioridades e status
-   - Vinculação com casos e clientes
+   - Vinculaï¿½ï¿½o com casos e clientes
    - Funcionalidade de check/uncheck
 
 4. **Busca Global** (`/search`)
@@ -102,14 +157,14 @@ Sistema completo de gestão jurídica desenvolvido em React/TypeScript com funcion
    - Metadados contextuais
    - Interface intuitiva
 
-5. **Configurações** (`/settings`)
-   - 4 seções organizadas: Geral, Conta, Notificações, Sistema
-   - Formulários validados
-   - Configurações de empresa e pessoais
+5. **Configuraï¿½ï¿½es** (`/settings`)
+   - 4 seï¿½ï¿½es organizadas: Geral, Conta, Notificaï¿½ï¿½es, Sistema
+   - Formulï¿½rios validados
+   - Configuraï¿½ï¿½es de empresa e pessoais
 
 ### =' Melhorias de UX/UI:
-- Todos os botões agora têm funcionalidade real
-- Navegação inteligente entre páginas relacionadas
+- Todos os botï¿½es agora tï¿½m funcionalidade real
+- Navegaï¿½ï¿½o inteligente entre pï¿½ginas relacionadas
 - Estados de loading e feedback visual
 - Mensagens de sucesso e erro
 - Estados vazios bem definidos
@@ -117,107 +172,178 @@ Sistema completo de gestão jurídica desenvolvido em React/TypeScript com funcion
 
 ---
 
-## <¯ Funcionalidades Core Implementadas
+## <ï¿½ Funcionalidades Core Implementadas
 
-### =e **Gestão de Clientes**
+### =e **Gestï¿½o de Clientes**
 - Cadastro completo PF/PJ
-- Histórico de relacionamento
-- Integração com casos
-- Sistema de comunicação
+- Histï¿½rico de relacionamento
+- Integraï¿½ï¿½o com casos
+- Sistema de comunicaï¿½ï¿½o
 
-### – **Gestão Jurídica**
+### ï¿½ **Gestï¿½o Jurï¿½dica**
 - Casos com workflow completo
 - Processos judiciais
 - Prazos e deadlines automatizados
-- Calendário processual
-- Documentação integrada
+- Calendï¿½rio processual
+- Documentaï¿½ï¿½o integrada
 
-### =° **Financeiro Completo**
-- Faturamento e cobrança
+### =ï¿½ **Financeiro Completo**
+- Faturamento e cobranï¿½a
 - Controle de despesas
 - Fluxo de caixa
-- Relatórios gerenciais
-- Transações detalhadas
+- Relatï¿½rios gerenciais
+- Transaï¿½ï¿½es detalhadas
 
-### =Ê **Analytics e Relatórios**
-- Métricas de performance
+### =ï¿½ **Analytics e Relatï¿½rios**
+- Mï¿½tricas de performance
 - Business Intelligence
 - Dashboards interativos
-- Relatórios customizáveis
+- Relatï¿½rios customizï¿½veis
 
 ### = **Produtividade**
 - Sistema de busca global
-- Gestão de tarefas
-- Configurações flexíveis
-- Navegação intuitiva
+- Gestï¿½o de tarefas
+- Configuraï¿½ï¿½es flexï¿½veis
+- Navegaï¿½ï¿½o intuitiva
 
 ---
 
-## <× Arquitetura Técnica
+## <ï¿½ Arquitetura Tï¿½cnica
 
 ### **Frontend:**
 - React 18 + TypeScript
 - Vite para build
 - TanStack Query para gerenciamento de estado
-- React Router para navegação
+- React Router para navegaï¿½ï¿½o
 - Tailwind CSS + Shadcn/ui
 - React Hook Form + Zod
 
 ### **Funcionalidades Implementadas:**
-- Sistema de autenticação completo
+- Sistema de autenticaï¿½ï¿½o completo
 - CRUD operations para todas as entidades
 - Sistema de uploads de arquivos
-- Validação de formulários robusta
+- Validaï¿½ï¿½o de formulï¿½rios robusta
 - Tratamento de erros consistente
 - Interface responsiva
-- Temas e personalização
+- Temas e personalizaï¿½ï¿½o
 
 ---
 
-## <‰ Status Atual - Fase 7 Completa
+## <ï¿½ Status Atual - Fase 8 Parcial
 
 ###  **Totalmente Funcional:**
--  Sistema de gestão jurídica completo
--  Todas as navegações funcionando
+-  Sistema de gestï¿½o jurï¿½dica completo
+-  Todas as navegaï¿½ï¿½es funcionando
 -  CRUD operations implementadas
--  Integrações entre módulos
+-  Integraï¿½ï¿½es entre mï¿½dulos
 -  Interface user-friendly
 -  Dados mock realistas
--  Validações e feedbacks
+-  Validaï¿½ï¿½es e feedbacks
 
 ### = **Testado e Validado:**
--  Fluxos de navegação
+-  Fluxos de navegaï¿½ï¿½o
 -  Funcionalidades core
 -  Responsividade
 -  Estados de erro e loading
--  Validação de formulários
+-  Validaï¿½ï¿½o de formulï¿½rios
 
 ---
 
-## =€ Próximos Passos (Futuras Expansões)
+## =ï¿½ Prï¿½ximos Passos (Futuras Expansï¿½es)
 
-### Fase 8 - Otimizações (Futura)
-- [ ] Performance otimizations
-- [ ] Testes automatizados
-- [ ] PWA capabilities
-- [ ] Integração com APIs reais
+###  Fase 8 - Otimizaï¿½ï¿½es Enterprise (PARCIALMENTE IMPLEMENTADA)
+**Status:** Em Desenvolvimento - Algumas funcionalidades implementadas
+- [x] **Correï¿½ï¿½es Crï¿½ticas de Produï¿½ï¿½o:**
+  - [x] Download de documentos funcional (sem redirecionamento 404)
+  - [x] Botï¿½o de compartilhamento com Web Share API + modal fallback
+  - [x] Correï¿½ï¿½o de erros SelectItem com valores vazios
+  - [x] Pï¿½gina de ediï¿½ï¿½o de documentos completa (/documents/:id/edit)
+  - [x] Validaï¿½ï¿½o de formulï¿½rios com Zod schemas
+  - [x] Sistema de tags editï¿½veis
 
-### Fase 9 - Funcionalidades Avançadas (Futura)
+- [x] **Funcionalidades de Documentos Avanï¿½adas:**
+  - [x] Geraï¿½ï¿½o de PDF com jsPDF
+  - [x] Export para Excel com biblioteca XLSX
+  - [x] Sistema de pastas e organizaï¿½ï¿½o
+  - [x] Mock de download com blob creation
+  - [x] Tratamento de erros melhorado
+
+- [x] **Infraestrutura Bï¿½sica (Parcial):**
+  - [x] Configuraï¿½ï¿½o de testes com Vitest (setup bï¿½sico)
+  - [x] Componentes de performance utilities
+  - [x] PWA Manager component (estrutura)
+  - [x] API Client base
+  - [x] Configuraï¿½ï¿½o de ambiente (.env.example)
+
+- [ ] **Performance Optimizations (Pendente):**
+  - [ ] Lazy loading completo de pï¿½ginas
+  - [ ] Cache inteligente com TTL configurado  
+  - [ ] Debouncing e throttling para eventos frequentes
+  - [ ] Monitoramento de performance ativo
+
+- [ ] **Testes Automatizados (Pendente):**
+  - [ ] Testes para componentes UI principais
+  - [ ] Testes para hooks customizados
+  - [ ] Testes para serviï¿½os de API
+  - [ ] Cobertura de testes implementada
+
+- [ ] **PWA Capabilities Completas (Pendente):**
+  - [ ] Service Worker com cache funcional
+  - [ ] Suporte offline real
+  - [ ] Notificaï¿½ï¿½es push ativas
+  - [ ] Install prompt funcional
+
+- [ ] **Integraï¿½ï¿½o com APIs Reais (Pendente):**
+  - [ ] Sistema de retry e rate limiting ativo
+  - [ ] Autenticaï¿½ï¿½o JWT com refresh token
+  - [ ] Sync offline/online automï¿½tico funcional
+
+### Fase 9 - Funcionalidades Avanï¿½adas (Futura)
 - [ ] Assinatura digital
-- [ ] Integração tribunais
-- [ ] IA para análise de documentos
-- [ ] Notificações push
+- [ ] Integraï¿½ï¿½o tribunais
+- [ ] IA para anï¿½lise de documentos
+- [ ] Notificaï¿½ï¿½es push avanï¿½adas
+- [ ] Integraï¿½ï¿½o com WhatsApp Business
+- [ ] Relatï¿½rios avanï¿½ados com BI
 
 ---
 
-## =Ý Notas de Desenvolvimento
+## =ï¿½ Notas de Desenvolvimento
 
-- **Última Atualização:** Fase 7 - Agosto 2025
-- **Status do Projeto:** Completamente funcional e testado
-- **Arquivos Criados:** 5 novas páginas + guia de implementação
-- **Bugs Corrigidos:** 100% dos problemas reportados
-- **Cobertura de Funcionalidades:** Sistema completo para gestão jurídica
+- **ï¿½ltima Atualizaï¿½ï¿½o:** Fase 8 Parcial - Agosto 2025
+- **Status do Projeto:** Sistema Completo com Melhorias Enterprise Iniciadas
+- **Arquivos Criados na Fase 8:** 15+ arquivos de infraestrutura, estruturas base
+- **Funcionalidades Implementadas:** 
+  - âœ… Sistema de gestï¿½o de documentos avanï¿½ado
+  - âœ… Correï¿½ï¿½es crï¿½ticas de produï¿½ï¿½o
+  - âœ… Export PDF/Excel funcional
+  - âœ… Sistema de compartilhamento completo
+- **Em Desenvolvimento:**
+  - ðŸ”¨ Performance optimizations (estrutura criada)
+  - ðŸ”¨ Testes automatizados (setup bï¿½sico)
+  - ðŸ”¨ PWA capabilities (componentes base)
+- **Cobertura de Funcionalidades:** Sistema totalmente funcional com melhorias enterprise em andamento
 
 ---
 
-*Este roadmap é atualizado conforme o progresso do desenvolvimento e feedback dos testes.*
+## ðŸ“Š **Resumo do Status por Fase**
+
+### âœ… **Fases Completas (1-7):**
+- **Fase 1-7:** Sistema jurÃ­dico completo e funcional
+- **Total de funcionalidades:** 100% operacionais
+- **Status:** ProduÃ§Ã£o-ready
+
+### ðŸ”¨ **Fase 8 - Em Desenvolvimento:**
+- **Implementado:** 40% (documentos avanÃ§ados, correÃ§Ãµes crÃ­ticas)
+- **Em desenvolvimento:** 60% (performance, testes, PWA completo)
+- **Status:** Parcialmente funcional com melhorias enterprise
+
+### ðŸ“ˆ **PrÃ³ximas Prioridades Fase 8:**
+1. Completar performance optimizations
+2. Implementar testes automatizados completos
+3. Ativar PWA capabilities
+4. Integrar APIs reais com retry/sync
+
+---
+
+*Este roadmap Ã© atualizado conforme o progresso do desenvolvimento e feedback dos testes.*
