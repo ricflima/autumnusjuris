@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 // Environment configuration
 const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://172.25.132.0:3001/api',
   timeout: 15000,
   retryAttempts: 2,
 };

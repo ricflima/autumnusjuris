@@ -21,12 +21,8 @@ export type DocumentType =
 
 export type DocumentStatus = 
   | 'draft' 
-  | 'active' 
-  | 'archived' 
-  | 'deleted'
-  | 'pending_review'
-  | 'approved'
-  | 'rejected';
+  | 'final' 
+  | 'archived';
 
 export type DocumentCategory = 
   | 'contract' 
@@ -420,12 +416,8 @@ export const DOCUMENT_CATEGORY_LABELS: Record<DocumentCategory, string> = {
 
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: 'Rascunho',
-  active: 'Ativo',
-  archived: 'Arquivado',
-  deleted: 'Excluído',
-  pending_review: 'Aguardando Revisão',
-  approved: 'Aprovado',
-  rejected: 'Rejeitado'
+  final: 'Final',
+  archived: 'Arquivado'
 };
 
 export const DOCUMENT_SECURITY_LABELS: Record<DocumentSecurity, string> = {

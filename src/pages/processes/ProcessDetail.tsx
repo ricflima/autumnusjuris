@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { processesService } from '@/services/processes.service';
+import TribunalMovements from '@/components/processes/TribunalMovements';
 import { 
   Process,
   ProcessDeadline, 
@@ -765,84 +766,11 @@ export default function ProcessDetail() {
         )}
 
         {activeTab === 'movements' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Movimentações Processuais</h3>
-              <Button
-                onClick={() => navigate(`/processes/${process.id}/movements/create`)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Nova Movimentação
-              </Button>
-            </div>
-            
-            {movements && movements.length > 0 ? (
-              <div className="space-y-4">
-                {movements.map(movement => (
-                  <Card key={movement.id} className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              movement.official ? 'bg-green-500' : 'bg-blue-500'
-                            }`}></div>
-                            <span className="text-sm text-gray-600">
-                              {formatDateTime(movement.date)}
-                            </span>
-                          </div>
-                          
-                          {movement.official && (
-                            <Badge className="bg-green-100 text-green-800">
-                              Oficial
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <p className="text-gray-900 mb-2">{movement.description}</p>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>Por: {movement.author}</span>
-                          <span>Tipo: {movement.type}</span>
-                        </div>
-                        
-                        {movement.attachments && movement.attachments.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-sm text-gray-600 mb-1">Anexos:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {movement.attachments.map((attachment, index) => (
-                                <Badge key={index} className="bg-gray-100 text-gray-800">
-                                  {attachment}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nenhuma movimentação registrada
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Registre as movimentações para manter um histórico completo do processo.
-                </p>
-                <Button
-                  onClick={() => navigate(`/processes/${process.id}/movements/create`)}
-                  className="flex items-center gap-2 mx-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  Primeira Movimentação
-                </Button>
-              </Card>
-            )}
-          </div>
+          <TribunalMovements
+            processId={process.id}
+            processNumber={process.number}
+            currentMovements={movements || []}
+          />
         )}
       </div>
     </div>

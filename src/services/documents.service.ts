@@ -139,7 +139,7 @@ const MOCK_DOCUMENTS: Document[] = [
     folderPath: '/Documentos Iniciais',
     category: 'contract',
     tags: ['contrato', 'prestação-serviços', 'silva'],
-    status: 'active',
+    status: 'final',
     security: 'internal',
     priority: 'high',
     caseId: '1',
@@ -218,7 +218,7 @@ const MOCK_DOCUMENTS: Document[] = [
     folderPath: '/Documentos Iniciais',
     category: 'petition',
     tags: ['petição', 'inicial', 'trabalhista', 'silva'],
-    status: 'active',
+    status: 'final',
     security: 'confidential',
     priority: 'urgent',
     caseId: '1',
@@ -285,7 +285,7 @@ const MOCK_DOCUMENTS: Document[] = [
     folderPath: '/Provas e Evidências',
     category: 'evidence',
     tags: ['evidência', 'cartão-ponto', 'horas-extras'],
-    status: 'active',
+    status: 'final',
     security: 'confidential',
     priority: 'high',
     caseId: '1',
@@ -539,7 +539,7 @@ class DocumentsService {
         folderPath: data.folderId ? this.getFolderPath(data.folderId) : '/',
         category: data.category,
         tags: data.tags || [],
-        status: data.status || 'active',
+        status: data.status || 'final',
         security: data.security || 'internal',
         priority: data.priority || 'medium',
         caseId: data.caseId,
@@ -987,12 +987,8 @@ class DocumentsService {
   getStatusColor(status: DocumentStatus): string {
     const colors = {
       draft: 'bg-gray-100 text-gray-800',
-      active: 'bg-green-100 text-green-800',
-      archived: 'bg-blue-100 text-blue-800',
-      deleted: 'bg-red-100 text-red-800',
-      pending_review: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-emerald-100 text-emerald-800',
-      rejected: 'bg-red-100 text-red-800'
+      final: 'bg-green-100 text-green-800',
+      archived: 'bg-blue-100 text-blue-800'
     };
     return colors[status];
   }

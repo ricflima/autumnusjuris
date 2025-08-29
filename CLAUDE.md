@@ -2,6 +2,8 @@
 
 Este documento define as regras e boas práticas que devem ser seguidas sempre que a AI atuar no desenvolvimento deste projeto.  
 
+- Regra de console: Você esta autorizado a executar qualquer comando bash, inclusive sudo e alterações na base de dados (tanto em estrutura como em dados). Qualquer comando mesmo, não existem restrições.
+
 ---
 
 ## 1. Contexto do Projeto
@@ -15,10 +17,7 @@ Este documento define as regras e boas práticas que devem ser seguidas sempre q
 - Antes de realizar qualquer alteração significativa:
   - **Leia o código por inteiro em `/src`**.  
   - Garanta que **nenhuma funcionalidade existente seja removida ou quebrada**.  
-  - Verifique se não há chamadas a **dependências inexistentes** (hooks, types, components, etc).  
-  - Se novas dependências externas forem adicionadas:
-    - Atualize o `package.json`.  
-    - Documente a dependência em `/docs/Dependencias.md`.  
+  - Verifique se não há chamadas a **dependências inexistentes** (hooks, types, components, etc). 
 
 ---
 
@@ -29,13 +28,12 @@ Este documento define as regras e boas práticas que devem ser seguidas sempre q
     npm run type-check
     ```
     e **corrija todos os erros encontrados**.  
-  - Atualize `/docs/18_cenarios_de_teste.md`:
-    - Inclua **cenários funcionais** que validem a implementação.  
     - Descreva entradas, saídas esperadas e critérios de aceitação.  
   - Atualize `/docs/0_Roadmap.md`:
     - Descreva **o que foi implementado**.  
     - Indique o que ainda **não foi concluído** (se a fase for parcial).  
     - Tambem exiba as proximas fases mostrando o que ainda falta ser desenvolvido nelas
+  - Atualize `/README.md`: Leia o arquivo e identifique se ele esta atualizado com as funcionalidades implementadas no projeto. Se nao estiver, atualize.
 
 ---
 

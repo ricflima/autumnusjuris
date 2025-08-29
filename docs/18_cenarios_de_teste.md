@@ -335,5 +335,209 @@ Este documento contém os cenários funcionais para validar todas as implementa�
 
 ---
 
-*Documento atualizado em: Janeiro 2025 - Fase 9*
-*Próxima revisão: Implementação da Fase 10*
+## 🔌 Fase 10 - Integração Completa com APIs Reais
+
+### 🏗️ Sistema de Processos com API Real
+
+#### CT-PR-001: Criar Processo com API Real
+**Cenário:** Como usuário, quero criar um processo utilizando a API real (não mock)
+
+**Pré-condições:**
+- Backend Express.js rodando com PostgreSQL
+- Usuário autenticado
+- Cliente válido existente no sistema
+
+**Entrada:**
+- Número: "10005926520255020003"
+- Título: "Reclamação Trabalhista - Rescisão Indireta"
+- Tipo: "labor"
+- Prioridade: "medium"
+- Cliente selecionado
+- Responsável selecionado
+- Tribunal: "15ª Vara do Trabalho de São Paulo"
+
+**Saída Esperada:**
+- Processo criado com número formatado: "1000592-65.2025.5.02.0003"
+- Processo aparece na lista imediatamente
+- Status: "active"
+- Dados salvos no PostgreSQL
+
+**Critérios de Aceitação:**
+- ✅ Número deve ser formatado automaticamente no padrão CNJ
+- ✅ Processo deve aparecer na lista após criação
+- ✅ Todas as validações de campo devem funcionar
+- ✅ Relacionamentos FK com clientes/casos devem ser criados
+
+#### CT-PR-002: Identificar Tribunal Automaticamente
+**Cenário:** Como usuário, quero que o tribunal seja identificado automaticamente baseado no número do processo
+
+**Pré-condições:**
+- Processo criado com número formatado
+- Parser de números CNJ funcionando
+
+**Entrada:**
+- Número do processo: "1000592-65.2025.5.02.0003"
+- Acesso à página de detalhes do processo
+- Clique em "Consultar Movimentações"
+
+**Saída Esperada:**
+- Tribunal identificado: "TRT02 - Tribunal Regional do Trabalho da 2ª Região"
+- Consulta iniciada automaticamente
+- Não solicitação de seleção manual de tribunal
+
+**Critérios de Aceitação:**
+- ✅ Deve identificar segmento judiciário (Justiça do Trabalho)
+- ✅ Deve mapear código do tribunal (02)
+- ✅ Deve exibir nome completo do tribunal
+- ✅ Interface não deve mostrar campos de seleção manual
+
+#### CT-PR-003: Consultar Movimentações sem CORS
+**Cenário:** Como usuário, quero consultar movimentações processuais sem erros de CORS
+
+**Pré-condições:**
+- Processo com tribunal identificado
+- Backend proxy configurado
+- URLs usando IP de rede (não localhost)
+
+**Entrada:**
+- Número do processo: "1000592-65.2025.5.02.0003"
+- Tribunal: "TRT02"
+- Clique em consultar movimentações
+
+**Saída Esperada:**
+- Requisição feita para backend proxy
+- Sem erros de CORS no DevTools
+- Resposta da consulta exibida
+- Loading states funcionando
+
+**Critérios de Aceitação:**
+- ✅ Não deve haver erros "Private Network Request" no Chrome
+- ✅ Requisição deve usar IP 172.25.132.0:3001
+- ✅ Backend deve proxificar para tribunal correto
+- ✅ Resposta deve ser formatada corretamente
+
+### 🔄 Eliminação Completa de Mock Data
+
+#### CT-MD-001: Verificar Ausência de Dados Mock em Processes
+**Cenário:** Como desenvolvedor, quero garantir que nenhum dado mock seja usado no serviço de processos
+
+**Pré-condições:**
+- Código atualizado com todas as APIs reais
+- Mock arrays removidos ou desabilitados
+
+**Entrada:**
+- Inspeção do código em `processes.service.ts`
+- Execução de operações CRUD de processos
+
+**Saída Esperada:**
+- Todas as condicionais mock devem estar como `false` ou removidas
+- Todas as operações devem usar axios/fetch para APIs
+- Nenhuma referência a arrays mock ativos
+
+**Critérios de Aceitação:**
+- ✅ Busca por `if (false)` ou `if (USE_MOCK_DATA)` deve mostrar desabilitado
+- ✅ Todas as funções devem usar API_BASE_URL
+- ✅ Nenhum MOCK_PROCESSES array deve estar ativo
+- ✅ TypeScript deve compilar sem erros
+
+#### CT-MD-002: Verificar Integração Database PostgreSQL
+**Cenário:** Como usuário, quero que todos os dados sejam persistidos no PostgreSQL
+
+**Pré-condições:**
+- PostgreSQL rodando na porta 5432
+- Tabelas criadas corretamente
+- Relacionamentos FK configurados
+
+**Entrada:**
+- Criar processo via interface
+- Atualizar processo
+- Deletar processo
+- Listar processos
+
+**Saída Esperada:**
+- Todos os dados devem ser salvos no banco
+- Consultas SQL devem retornar dados corretos
+- Foreign keys devem ser respeitadas
+- UUIDs devem ser gerados automaticamente
+
+**Critérios de Aceitação:**
+- ✅ Query direta no PostgreSQL deve mostrar dados inseridos
+- ✅ Relacionamentos devem estar corretos
+- ✅ Validações de integridade devem funcionar
+- ✅ Logs do backend devem mostrar queries executadas
+
+### 🛠️ Correções de Infraestrutura
+
+#### CT-IF-001: Validar Configuração de Rede
+**Cenário:** Como administrador, quero garantir que a configuração de rede evita problemas de CORS
+
+**Pré-condições:**
+- Backend rodando em 172.25.132.0:3001
+- Frontend configurado para usar IP de rede
+- Variáveis de ambiente configuradas
+
+**Entrada:**
+- Verificação de URLs em todos os serviços
+- Teste de conectividade entre frontend e backend
+
+**Saída Esperada:**
+- Todas as URLs devem usar IP de rede
+- Conectividade deve funcionar sem erros
+- VITE_API_BASE_URL deve estar configurado
+
+**Critérios de Aceitação:**
+- ✅ Nenhuma URL localhost deve estar presente em produção
+- ✅ Variável VITE_API_BASE_URL deve apontar para IP correto
+- ✅ Backend deve responder na porta configurada
+- ✅ Não deve haver Mixed Content warnings
+
+#### CT-IF-002: Verificar Tratamento de Erros
+**Cenário:** Como usuário, quero receber mensagens de erro claras quando algo falha
+
+**Pré-condições:**
+- Sistema funcionando com APIs reais
+- Validações de backend implementadas
+
+**Entrada:**
+- Tentar criar processo com dados inválidos
+- Tentar acessar processo inexistente
+- Simular erro de rede
+
+**Saída Esperada:**
+- Mensagens de erro específicas
+- Estados de loading apropriados
+- Fallback para erros de rede
+- Logs detalhados no backend
+
+**Critérios de Aceitação:**
+- ✅ Mensagens devem ser user-friendly
+- ✅ Erros 400/500 devem ser tratados diferentemente
+- ✅ Loading states devem desaparecer após erro
+- ✅ Console logs devem ajudar no debug
+
+---
+
+## 📊 Resumo de Execução Atualizado
+
+### Estatísticas de Cobertura:
+- **Total de Cenários:** 18 cenários funcionais (6 novos da Fase 10)
+- **Funcionalidades Cobertas:** 5 principais + integrações + infraestrutura
+- **Critérios de Aceitação:** 72 critérios específicos (24 novos)
+- **Tipos de Teste:** Funcionais, Integração, Performance, Infraestrutura
+
+### Priorização dos Testes Fase 10:
+1. **Alta Prioridade:** CT-PR-001, CT-MD-001, CT-IF-001
+2. **Média Prioridade:** CT-PR-002, CT-MD-002, CT-IF-002  
+3. **Baixa Prioridade:** CT-PR-003 (após os outros funcionarem)
+
+### Automação Recomendada Fase 10:
+- ✅ Testes de integração com PostgreSQL
+- ✅ Testes de validação de APIs REST
+- ✅ Testes de parsing de números CNJ
+- ✅ Testes de conectividade de rede
+- ❌ Testes de consulta real tribunais (requer conexão externa)
+
+---
+
+*Documento atualizado em: Janeiro 2025 - Fase 10*
+*Próxima revisão: Implementação das próximas funcionalidades*

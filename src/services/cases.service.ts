@@ -1,7 +1,7 @@
 // src/services/cases.service.ts
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://172.25.132.0:3001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -302,71 +302,7 @@ const simulateDelay = (ms: number = 1000) =>
 class CasesService {
   async getCases(filters: CaseFilters = {}): Promise<CasesResponse> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
-        await simulateDelay();
-        
-        let filteredCases = [...MOCK_CASES];
-        
-        // Aplicar filtros
-        if (filters.status?.length) {
-          filteredCases = filteredCases.filter(c => filters.status!.includes(c.status));
-        }
-        
-        if (filters.priority?.length) {
-          filteredCases = filteredCases.filter(c => filters.priority!.includes(c.priority));
-        }
-        
-        if (filters.clientId) {
-          filteredCases = filteredCases.filter(c => c.clientId === filters.clientId);
-        }
-        
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          filteredCases = filteredCases.filter(c => 
-            c.title.toLowerCase().includes(searchLower) ||
-            c.description.toLowerCase().includes(searchLower) ||
-            c.clientName.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        // Ordenação
-        const sortBy = filters.sortBy || 'updatedAt';
-        const sortOrder = filters.sortOrder || 'desc';
-        
-        filteredCases.sort((a, b) => {
-          let aVal: any = a[sortBy];
-          let bVal: any = b[sortBy];
-          
-          if (sortBy === 'priority') {
-            const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-            aVal = priorityOrder[a.priority as keyof typeof priorityOrder];
-            bVal = priorityOrder[b.priority as keyof typeof priorityOrder];
-          }
-          
-          if (sortOrder === 'asc') {
-            return aVal > bVal ? 1 : -1;
-          } else {
-            return aVal < bVal ? 1 : -1;
-          }
-        });
-        
-        // Paginação
-        const page = filters.page || 1;
-        const limit = filters.limit || 10;
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const paginatedCases = filteredCases.slice(startIndex, endIndex);
-        
-        return {
-          cases: paginatedCases,
-          total: filteredCases.length,
-          page,
-          limit,
-          hasMore: endIndex < filteredCases.length
-        };
-      }
-      
-      // API real
+      // Sempre usar API real
       const response = await api.get('/cases', { params: filters });
       return response.data;
     } catch (error: any) {
@@ -376,7 +312,7 @@ class CasesService {
   
   async getCaseById(id: string): Promise<Case> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(500);
         
         const case_ = MOCK_CASES.find(c => c.id === id);
@@ -384,7 +320,7 @@ class CasesService {
           throw new Error('Caso não encontrado');
         }
         
-        return case_;
+        return case_!;
       }
       
       const response = await api.get(`/cases/${id}`);
@@ -396,7 +332,7 @@ class CasesService {
   
   async createCase(data: CreateCaseRequest): Promise<Case> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(1500);
         
         const newCase: Case = {
@@ -434,7 +370,7 @@ class CasesService {
   
   async updateCase(id: string, data: UpdateCaseRequest): Promise<Case> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(1000);
         
         const caseIndex = MOCK_CASES.findIndex(c => c.id === id);
@@ -462,7 +398,7 @@ class CasesService {
   
   async deleteCase(id: string): Promise<void> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(800);
         
         const caseIndex = MOCK_CASES.findIndex(c => c.id === id);
@@ -482,7 +418,7 @@ class CasesService {
   
   async addCaseNote(id: string, note: string): Promise<CaseTimelineItem> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(500);
         
         const case_ = MOCK_CASES.find(c => c.id === id);
@@ -491,7 +427,7 @@ class CasesService {
         }
         
         const newNote: CaseTimelineItem = {
-          id: (case_.timeline.length + 1).toString(),
+          id: (case_!.timeline.length + 1).toString(),
           title: 'Anotação adicionada',
           description: note,
           date: new Date().toISOString(),
@@ -499,9 +435,9 @@ class CasesService {
           user: 'Dr. João Silva'
         };
         
-        case_.timeline.push(newNote);
-        case_.lastUpdate = new Date().toISOString();
-        case_.updatedAt = new Date().toISOString();
+        case_!.timeline.push(newNote);
+        case_!.lastUpdate = new Date().toISOString();
+        case_!.updatedAt = new Date().toISOString();
         
         return newNote;
       }
@@ -515,7 +451,7 @@ class CasesService {
   // Adicionar método para buscar casos por cliente (adicionar na classe CasesService):
   async getCasesByClient(clientId: string): Promise<Case[]> {
   try {
-    if (import.meta.env.VITE_MOCK_API !== 'false') {
+    if (false) { // Always use API
       await simulateDelay(500);
       
       return MOCK_CASES.filter(c => c.clientId === clientId)
@@ -532,7 +468,7 @@ class CasesService {
   // Adicionar método para vincular caso ao cliente:
   async linkCaseToClient(caseId: string, clientId: string): Promise<void> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(500);
       
         const caseIndex = MOCK_CASES.findIndex(c => c.id === caseId);
@@ -557,7 +493,7 @@ class CasesService {
     totalValue: number;
   }> {
     try {
-      if (import.meta.env.VITE_MOCK_API !== 'false') {
+      if (false) { // Always use API
         await simulateDelay(300);
       
         const clientCases = MOCK_CASES.filter(c => c.clientId === clientId);

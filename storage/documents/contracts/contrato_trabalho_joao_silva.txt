@@ -1,0 +1,23 @@
+CONTRATO DE TRABALHO
+==================
+
+CONTRATANTE: Empresa XYZ Ltda.
+CNPJ: 11.222.333/0001-44
+Endereço: Rua das Empresas, 100 - São Paulo/SP
+
+CONTRATADO: João Silva
+CPF: 123.456.789-00
+Endereço: Rua das Flores, 123 - São Paulo/SP
+
+CARGO: Engenheiro de Software
+SALÁRIO: R$ 8.000,00 (oito mil reais)
+JORNADA: 44 horas semanais
+
+CLÁUSULAS:
+1. O empregado compromete-se a cumprir horário de trabalho das 8h às 18h.
+2. Horas extras serão pagas com adicional de 50%.
+3. Adicional noturno será pago conforme legislação.
+
+Data: 15/01/2023
+_____________________     _____________________
+    João Silva               Empresa XYZ Ltda

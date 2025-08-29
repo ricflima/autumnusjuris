@@ -16,7 +16,12 @@ import {
   CreateMovementRequest,
   ProcessStatus,
   ProcessPhase,
+  ProcessType,
+  ProcessPriority,
 } from '@/types/processes';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://172.25.132.0:3001/api';
 
 // Mock data para desenvolvimento
 const MOCK_PROCESSES: Process[] = [
@@ -251,235 +256,269 @@ const MOCK_MOVEMENTS: ProcessMovement[] = [
 class ProcessesService {
   // CRUD de Processos
   async getProcesses(filters: ProcessFilters = {}): Promise<ProcessesResponse> {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    let filteredProcesses = [...MOCK_PROCESSES];
-    
-    // Aplicar filtros
-    if (filters.search) {
-      const search = filters.search.toLowerCase();
-      filteredProcesses = filteredProcesses.filter(process => 
-        process.title.toLowerCase().includes(search) ||
-        process.number.toLowerCase().includes(search) ||
-        process.description?.toLowerCase().includes(search) ||
-        process.opposingParty?.toLowerCase().includes(search)
-      );
-    }
-    
-    if (filters.status && filters.status.length > 0) {
-      filteredProcesses = filteredProcesses.filter(process => 
-        filters.status!.includes(process.status)
-      );
-    }
-    
-    if (filters.type && filters.type.length > 0) {
-      filteredProcesses = filteredProcesses.filter(process => 
-        filters.type!.includes(process.type)
-      );
-    }
-    
-    if (filters.priority && filters.priority.length > 0) {
-      filteredProcesses = filteredProcesses.filter(process => 
-        filters.priority!.includes(process.priority)
-      );
-    }
-    
-    if (filters.clientId) {
-      filteredProcesses = filteredProcesses.filter(process => 
-        process.clientIds.includes(filters.clientId!)
-      );
-    }
-    
-    if (filters.caseId) {
-      filteredProcesses = filteredProcesses.filter(process => 
-        process.caseId === filters.caseId
-      );
-    }
-    
-    if (filters.hasOverdueDeadlines) {
-      const now = new Date();
-      const overdueProcessIds = MOCK_DEADLINES
-        .filter(deadline => 
-          deadline.status === 'pending' && 
-          new Date(deadline.dueDate) < now
-        )
-        .map(deadline => deadline.processId);
+    try {
+      const params = new URLSearchParams();
       
-      filteredProcesses = filteredProcesses.filter(process => 
-        overdueProcessIds.includes(process.id)
-      );
-    }
-    
-    // Ordenação
-    const sortBy = filters.sortBy || 'filingDate';
-    const sortOrder = filters.sortOrder || 'desc';
-    
-    filteredProcesses.sort((a, b) => {
-      let aValue: any = a[sortBy as keyof Process];
-      let bValue: any = b[sortBy as keyof Process];
+      // Add filters as query parameters
+      if (filters.caseId) params.append('caseId', filters.caseId);
+      if (filters.status?.length === 1) params.append('status', filters.status[0]);
+      if (filters.page) params.append('page', filters.page.toString());
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
       
-      if (sortBy === 'nextDeadline') {
-        const aDeadline = MOCK_DEADLINES.find(d => d.processId === a.id && d.status === 'pending');
-        const bDeadline = MOCK_DEADLINES.find(d => d.processId === b.id && d.status === 'pending');
-        aValue = aDeadline?.dueDate || '9999-12-31';
-        bValue = bDeadline?.dueDate || '9999-12-31';
-      }
+      const response = await axios.get(`${API_BASE_URL}/processes?${params.toString()}`);
       
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-    
-    // Paginação
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    
-    const paginatedProcesses = filteredProcesses.slice(startIndex, endIndex);
-    
-    // Adicionar informações calculadas
-    const enrichedProcesses = paginatedProcesses.map(process => {
-      const nextDeadline = MOCK_DEADLINES
-        .filter(d => d.processId === process.id && d.status === 'pending')
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
-      
-      const pendingDeadlines = MOCK_DEADLINES
-        .filter(d => d.processId === process.id && d.status === 'pending').length;
-      
-      const recentMovements = MOCK_MOVEMENTS
-        .filter(m => m.processId === process.id)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 3);
-      
+      // Transform API response to match frontend types
+      const apiProcesses = response.data.processes || [];
+      const processes: Process[] = apiProcesses.map((p: any) => ({
+        id: p.id,
+        number: p.number,
+        internalNumber: p.number,
+        title: p.caseTitle || `Processo ${p.number}`,
+        description: p.observations || '',
+        type: 'civil' as ProcessType,
+        status: p.status as ProcessStatus,
+        phase: 'instruction' as ProcessPhase,
+        priority: 'medium' as ProcessPriority,
+        caseId: p.caseId,
+        clientIds: [],
+        responsibleLawyerId: '',
+        court: {
+          court: p.court,
+          district: p.judicialDistrict || '',
+          city: p.city || '',
+          state: p.state || '',
+          country: 'Brasil'
+        },
+        opposingParty: p.defendant || '',
+        opposingLawyer: p.lawyerDefendant || '',
+        processValue: {
+          amount: p.claimValue || 0,
+          currency: 'BRL',
+          description: 'Valor da causa'
+        },
+        costs: {
+          initialFees: { amount: 0, currency: 'BRL' },
+          courtCosts: { amount: 0, currency: 'BRL' },
+          lawyerFees: { amount: 0, currency: 'BRL' },
+          otherExpenses: [],
+          totalCosts: { amount: 0, currency: 'BRL' }
+        },
+        filingDate: p.distributionDate || p.createdAt,
+        lastMovementDate: p.updatedAt,
+        nextDeadline: undefined,
+        tags: p.tags || [],
+        notes: p.observations || '',
+        isConfidential: false,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        createdBy: '',
+        daysActive: Math.ceil((new Date().getTime() - new Date(p.createdAt).getTime()) / (1000 * 3600 * 24)),
+        pendingDeadlines: 0,
+        recentMovements: []
+      }));
+
       return {
-        ...process,
-        nextDeadline,
-        pendingDeadlines,
-        recentMovements
+        processes,
+        total: response.data.total || processes.length,
+        page: response.data.page || 1,
+        limit: response.data.limit || 10,
+        hasMore: response.data.hasMore || false
       };
-    });
-    
-    return {
-      processes: enrichedProcesses,
-      total: filteredProcesses.length,
-      page,
-      limit,
-      hasMore: endIndex < filteredProcesses.length
-    };
+    } catch (error) {
+      console.error('Erro ao buscar processos:', error);
+      throw new Error('Falha ao buscar processos');
+    }
   }
   
   async getProcess(id: string): Promise<Process> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const process = MOCK_PROCESSES.find(p => p.id === id);
-    if (!process) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/processes/${id}`);
+      const p = response.data;
+      
+      // Transform API response to match frontend types
+      const process: Process = {
+        id: p.id,
+        number: p.number,
+        internalNumber: p.number,
+        title: p.caseTitle || `Processo ${p.number}`,
+        description: p.observations || '',
+        type: 'civil',
+        status: p.status as ProcessStatus,
+        phase: 'instruction' as ProcessPhase,
+        priority: 'medium' as ProcessPriority,
+        caseId: p.caseId,
+        clientIds: [],
+        responsibleLawyerId: '',
+        court: {
+          court: p.court,
+          district: p.judicialDistrict || '',
+          city: p.city || '',
+          state: p.state || '',
+          country: 'Brasil'
+        },
+        opposingParty: p.defendant || '',
+        opposingLawyer: p.lawyerDefendant || '',
+        processValue: {
+          amount: p.claimValue || 0,
+          currency: 'BRL',
+          description: 'Valor da causa'
+        },
+        costs: {
+          initialFees: { amount: 0, currency: 'BRL' },
+          courtCosts: { amount: 0, currency: 'BRL' },
+          lawyerFees: { amount: 0, currency: 'BRL' },
+          otherExpenses: [],
+          totalCosts: { amount: 0, currency: 'BRL' }
+        },
+        filingDate: p.distributionDate || p.createdAt,
+        lastMovementDate: p.updatedAt,
+        nextDeadline: undefined,
+        tags: p.tags || [],
+        notes: p.observations || '',
+        isConfidential: false,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        createdBy: '',
+        daysActive: Math.ceil((new Date().getTime() - new Date(p.createdAt).getTime()) / (1000 * 3600 * 24)),
+        pendingDeadlines: 0,
+        recentMovements: p.movements?.map((m: any) => ({
+          id: m.id,
+          processId: p.id,
+          date: m.date,
+          description: m.description,
+          type: 'other' as any,
+          author: m.responsible || '',
+          official: true,
+          createdAt: m.createdAt,
+          updatedAt: m.createdAt
+        })) || []
+      };
+
+      return process;
+    } catch (error) {
+      console.error('Erro ao buscar processo:', error);
       throw new Error('Processo não encontrado');
     }
-    
-    // Enriquecer com dados relacionados
-    const nextDeadline = MOCK_DEADLINES
-      .filter(d => d.processId === id && d.status === 'pending')
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
-    
-    const pendingDeadlines = MOCK_DEADLINES
-      .filter(d => d.processId === id && d.status === 'pending').length;
-    
-    const recentMovements = MOCK_MOVEMENTS
-      .filter(m => m.processId === id)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
-    
-    return {
-      ...process,
-      nextDeadline,
-      pendingDeadlines,
-      recentMovements
-    };
   }
   
   async createProcess(data: CreateProcessRequest): Promise<Process> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const newProcess: Process = {
-      id: Date.now().toString(),
-      ...data,
-      status: 'active' as ProcessStatus,
-      phase: 'initial' as ProcessPhase,
-      processValue: data.processValue
-        ? {
-            ...data.processValue,
-            currency: data.processValue.currency ?? 'BRL', // garante string
-          }
-        : undefined,
-      costs: data.processValue
-        ? {
-            initialFees: { amount: 0, currency: 'BRL' },
-            courtCosts: { amount: 0, currency: 'BRL' },
-            lawyerFees: { amount: 0, currency: 'BRL' },
-            otherExpenses: [],
-            totalCosts: { amount: 0, currency: 'BRL' }
-          }
-        : undefined,
-      lastMovementDate: data.filingDate,
-      isConfidential: data.isConfidential || false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: 'current-user',
-      daysActive: Math.floor(
-        (Date.now() - new Date(data.filingDate).getTime()) / (1000 * 60 * 60 * 24)
-      ),
-      pendingDeadlines: 0,
-      recentMovements: []
-    };
-    
-    MOCK_PROCESSES.push(newProcess);
-    return newProcess;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/processes`, {
+        number: data.number,
+        caseId: data.caseId,
+        plaintiff: data.clientIds[0] || 'Autor', // Usar primeiro cliente como autor
+        defendant: data.opposingParty || 'Réu',
+        subject: data.title,
+        class: 'Processo',
+        distributionDate: data.filingDate,
+        court: data.court.court,
+        district: data.court.district,
+        city: data.court.city,
+        state: data.court.state,
+        lawyerPlaintiff: data.responsibleLawyerId,
+        claimValue: data.processValue?.amount || 0,
+        observations: data.notes,
+        tags: data.tags || []
+      });
+
+      if (response.data.success) {
+        // Converter resposta da API para formato esperado pelo frontend
+        const apiProcess = response.data.process;
+        return {
+          id: apiProcess.id,
+          number: apiProcess.number,
+          internalNumber: data.internalNumber,
+          title: data.title,
+          description: data.description,
+          type: data.type,
+          status: apiProcess.status as ProcessStatus,
+          phase: 'initial' as ProcessPhase,
+          priority: data.priority,
+          caseId: data.caseId,
+          clientIds: data.clientIds,
+          responsibleLawyerId: data.responsibleLawyerId,
+          court: data.court,
+          opposingParty: data.opposingParty,
+          opposingLawyer: data.opposingLawyer,
+          processValue: data.processValue
+            ? {
+                ...data.processValue,
+                currency: data.processValue.currency ?? 'BRL'
+              }
+            : undefined,
+          filingDate: data.filingDate,
+          citationDate: data.citationDate,
+          lastMovementDate: data.filingDate,
+          notes: data.notes,
+          tags: data.tags || [],
+          isConfidential: data.isConfidential || false,
+          createdAt: apiProcess.createdAt,
+          updatedAt: apiProcess.updatedAt,
+          createdBy: 'current-user',
+          daysActive: Math.floor(
+            (Date.now() - new Date(data.filingDate).getTime()) / (1000 * 60 * 60 * 24)
+          ),
+          pendingDeadlines: 0,
+          recentMovements: []
+        };
+      } else {
+        throw new Error(response.data.message || 'Erro ao criar processo');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(error.response.data.message || 'Erro ao criar processo');
+      }
+      throw error;
+    }
   }
   
   async updateProcess(id: string, data: UpdateProcessRequest): Promise<Process> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    const index = MOCK_PROCESSES.findIndex(p => p.id === id);
-    if (index === -1) {
-      throw new Error('Processo não encontrado');
+    try {
+      const response = await axios.put(`${API_BASE_URL}/processes/${id}`, {
+        number: data.number,
+        plaintiff: data.clientIds?.[0] || undefined,
+        defendant: data.opposingParty,
+        subject: data.title,
+        class: 'Processo',
+        distributionDate: data.filingDate,
+        court: data.court?.court,
+        district: data.court?.district,
+        city: data.court?.city,
+        state: data.court?.state,
+        status: data.status,
+        claimValue: data.processValue?.amount || 0,
+        observations: data.notes
+      });
+
+      if (response.data.success) {
+        // Buscar processo atualizado completo
+        return await this.getProcess(id);
+      } else {
+        throw new Error(response.data.message || 'Erro ao atualizar processo');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(error.response.data.message || 'Erro ao atualizar processo');
+      }
+      throw error;
     }
-    
-    MOCK_PROCESSES[index] = {
-      ...MOCK_PROCESSES[index],
-      ...data,
-      processValue: data.processValue
-        ? {
-            ...MOCK_PROCESSES[index].processValue, // preserva o que já tinha
-            ...data.processValue,
-            currency: data.processValue.currency 
-              ?? MOCK_PROCESSES[index].processValue?.currency 
-              ?? 'BRL' // garante que nunca será undefined
-          }
-        : MOCK_PROCESSES[index].processValue,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return this.getProcess(id);
   }
   
   async deleteProcess(id: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    const index = MOCK_PROCESSES.findIndex(p => p.id === id);
-    if (index === -1) {
-      throw new Error('Processo não encontrado');
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/processes/${id}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Erro ao deletar processo');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(error.response.data.message || 'Erro ao deletar processo');
+      }
+      throw error;
     }
-    
-    MOCK_PROCESSES.splice(index, 1);
   }
   
   // Gerenciamento de Prazos
@@ -585,11 +624,29 @@ class ProcessesService {
   
   // Movimentações Processuais
   async getProcessMovements(processId: string): Promise<ProcessMovement[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    return MOCK_MOVEMENTS
-      .filter(m => m.processId === processId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/processes/${processId}`);
+      const p = response.data;
+      
+      if (!p.movements) {
+        return [];
+      }
+      
+      return p.movements.map((m: any) => ({
+        id: m.id,
+        processId: processId,
+        date: m.date,
+        description: m.description,
+        type: 'other' as any,
+        author: m.responsible || '',
+        official: true,
+        createdAt: m.createdAt,
+        updatedAt: m.createdAt
+      })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch (error) {
+      console.error('Erro ao buscar movimentações:', error);
+      return [];
+    }
   }
   
   async createMovement(data: CreateMovementRequest): Promise<ProcessMovement> {

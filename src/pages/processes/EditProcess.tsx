@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ProcessNumberInput } from '@/components/ui/process-number-input';
 
 import { processesService } from '@/services/processes.service';
 import { casesService } from '@/services/cases.service';
@@ -342,10 +343,11 @@ export default function EditProcess() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="number">Número do Processo *</Label>
-                <Input
+                <ProcessNumberInput
                   id="number"
-                  {...register('number')}
-                  placeholder="Ex: 1234567-89.2024.8.26.0001"
+                  value={watch('number')}
+                  onChange={(value) => setValue('number', value, { shouldValidate: true })}
+                  placeholder="0000000-00.0000.0.00.0000"
                   error={errors.number?.message}
                 />
               </div>

@@ -39,7 +39,7 @@ const documentSchema = z.object({
   category: z.enum(['contract', 'petition', 'evidence', 'certificate', 'correspondence', 'report', 'template', 'personal_document', 'court_decision', 'legal_opinion', 'invoice', 'receipt', 'other']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   security: z.enum(['public', 'internal', 'confidential', 'restricted']),
-  status: z.enum(['draft', 'active', 'archived', 'deleted', 'pending_review', 'approved', 'rejected']),
+  status: z.enum(['draft', 'final', 'archived']), // Match database enum
   folderId: z.string().optional(),
   tags: z.array(z.string()).default([])
 });
@@ -60,7 +60,7 @@ export default function EditDocument() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isValid }
+    formState: { errors, isValid, isDirty }
   } = useForm<DocumentFormData>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
@@ -69,7 +69,7 @@ export default function EditDocument() {
       category: 'other',
       priority: 'medium',
       security: 'internal',
-      status: 'draft',
+      status: 'draft', // This matches the database enum
       folderId: 'root',
       tags: []
     }
@@ -431,7 +431,7 @@ export default function EditDocument() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={!isValid || updateDocumentMutation.isPending}
+                    disabled={!isDirty || !isValid || updateDocumentMutation.isPending}
                   >
                     {updateDocumentMutation.isPending ? (
                       <>
