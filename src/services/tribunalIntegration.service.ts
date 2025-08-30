@@ -107,6 +107,23 @@ class TribunalIntegrationService {
           'consulta_movimentacoes'
         ]
       },
+      // Tribunais Estaduais - Amapá
+      {
+        id: 'tjap',
+        nome: 'Tribunal de Justiça do Amapá',
+        uf: 'AP',
+        jurisdicao: 'estadual',
+        apiType: 'scraping',
+        baseUrl: 'https://tucujuris.tjap.jus.br/tucujuris/pages/consultas/publico/consulta-publica-simples.jsf',
+        certificateRequired: false,
+        rateLimit: 60,
+        timeout: 30000,
+        active: true,
+        supportedOperations: [
+          'consulta_processo',
+          'consulta_movimentacoes'
+        ]
+      },
       // Tribunais Federais - TRF1
       {
         id: 'trf1',

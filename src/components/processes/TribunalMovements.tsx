@@ -27,7 +27,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 
 import {
   TribunalType,
@@ -66,11 +65,7 @@ export default function TribunalMovements({
     return processNumberParserService.parseProcessNumber(processNumber);
   }, [processNumber]);
   
-  // Estados para controle manual (removidos os seletores de tribunal e operação)
-  const [isManualMode, setIsManualMode] = useState(false);
-  const [selectedTribunals, setSelectedTribunals] = useState<TribunalType[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-  const [selectedOperations, setSelectedOperations] = useState<TribunalOperation[]>(['consulta_movimentacoes']);
+  // Remoção da funcionalidade de modo manual - apenas consulta automática
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [monitoringConfig, setMonitoringConfig] = useState<TribunalMonitoringConfig>({
     processId,
@@ -98,43 +93,29 @@ export default function TribunalMovements({
     updatedAt: new Date().toISOString()
   });
 
-  // Query para consultas manuais
+  // Query para consultas automáticas
   const { 
     data: consultaResults, 
     isLoading: isQuerying, 
-    refetch: executeManualQuery,
+    refetch: executeQuery,
     error 
   } = useQuery({
-    queryKey: ['tribunal-movements', processId, selectedTribunals, selectedOperations, selectAll],
+    queryKey: ['tribunal-movements', processId, processInfo.tribunal],
     queryFn: async () => {
       const results: ConsultaResponse[] = [];
       
-      // Determinar quais tribunais consultar
-      let tribunalsToQuery: TribunalType[];
-      
-      if (isManualMode) {
-        // Modo manual: usar tribunais selecionados
-        tribunalsToQuery = selectAll || selectedTribunals.length === tribunaisDisponiveis.length 
-          ? tribunaisDisponiveis.map(t => t.id as TribunalType)
-          : selectedTribunals;
-      } else {
-        // Modo automático: usar tribunal identificado pelo número do processo
-        if (processInfo.isValid && processInfo.tribunal) {
-          tribunalsToQuery = [processInfo.tribunal];
-        } else {
-          throw new Error('Não foi possível identificar o tribunal automaticamente. Número do processo pode estar inválido.');
-        }
-      }
-      
-      // Buscar todas as operações disponíveis em vez de apenas as selecionadas
-      const operationsToQuery: TribunalOperation[] = isManualMode ? selectedOperations : [
-        'consulta_movimentacoes',
-        'consulta_audiencias', 
-        'consulta_prazos',
-        'consulta_documentos'
-      ];
-      
-      for (const tribunal of tribunalsToQuery) {
+      // Usar apenas tribunal identificado automaticamente pelo número do processo
+      if (processInfo.isValid && processInfo.tribunal) {
+        const tribunal = processInfo.tribunal;
+        
+        // Buscar todas as operações disponíveis
+        const operationsToQuery: TribunalOperation[] = [
+          'consulta_movimentacoes',
+          'consulta_audiencias', 
+          'consulta_prazos',
+          'consulta_documentos'
+        ];
+        
         try {
           const response = await tribunalIntegrationService.consultarProcesso(
             processId,
@@ -159,6 +140,8 @@ export default function TribunalMovements({
         } catch (error) {
           console.error(`Erro na consulta do tribunal ${tribunal}:`, error);
         }
+      } else {
+        throw new Error('Não foi possível identificar o tribunal automaticamente. Número do processo pode estar inválido.');
       }
       
       return results;
@@ -206,19 +189,14 @@ export default function TribunalMovements({
     }
   });
 
-  // Executar consulta (automática ou manual)
+  // Executar consulta automática
   const handleQuery = () => {
-    if (isManualMode && selectedTribunals.length === 0 && !selectAll) {
-      toast.error('Selecione pelo menos um tribunal');
-      return;
-    }
-    
-    if (!isManualMode && (!processInfo.isValid || !processInfo.tribunal)) {
+    if (!processInfo.isValid || !processInfo.tribunal) {
       toast.error('Não foi possível identificar o tribunal automaticamente. Verifique o número do processo.');
       return;
     }
     
-    executeManualQuery();
+    executeQuery();
   };
 
   // Configurar monitoramento automático
@@ -277,44 +255,6 @@ export default function TribunalMovements({
   }, [consultaResults, currentMovements]);
 
   const tribunaisDisponiveis = tribunalIntegrationService.getTribunaisDisponiveis();
-
-  // Preparar opções para o multi-select
-  const tribunalOptions: MultiSelectOption[] = [
-    { label: 'Todos', value: 'todos' },
-    ...tribunaisDisponiveis.map(tribunal => ({
-      label: tribunal.nome,
-      value: tribunal.id
-    }))
-  ];
-
-  // Função para lidar com seleção de tribunais
-  const handleTribunalSelection = (values: string[]) => {
-    if (values.includes('todos')) {
-      if (!selectAll) {
-        // Se "Todos" foi selecionado, selecionar todos os tribunais
-        const allTribunals = tribunaisDisponiveis.map(t => t.id);
-        setSelectedTribunals(allTribunals);
-        setSelectAll(true);
-      } else {
-        // Se "Todos" foi desmarcado, limpar seleção
-        setSelectedTribunals([]);
-        setSelectAll(false);
-      }
-    } else {
-      // Seleção normal de tribunais individuais
-      const tribunals = values.filter(v => v !== 'todos') as TribunalType[];
-      setSelectedTribunals(tribunals);
-      setSelectAll(tribunals.length === tribunaisDisponiveis.length);
-    }
-  };
-
-  // Determinar valores selecionados para o multi-select
-  const getSelectedValues = () => {
-    if (selectAll || selectedTribunals.length === tribunaisDisponiveis.length) {
-      return ['todos'];
-    }
-    return selectedTribunals;
-  };
 
   return (
     <div className="space-y-6">
@@ -499,64 +439,11 @@ export default function TribunalMovements({
             </div>
           )}
 
-          {/* Alternar entre modo automático e manual */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={isManualMode}
-                onCheckedChange={setIsManualMode}
-              />
-              <label htmlFor="manual-mode" className="text-sm font-medium">
-                Modo manual {isManualMode ? '(ativado)' : '(desativado)'}
-              </label>
-            </div>
-            
-            {isManualMode && (
-              <Badge className="bg-blue-100 text-blue-800">
-                Configuração manual
-              </Badge>
-            )}
-          </div>
-
-          {/* Seleção manual de tribunais e operações */}
-          {isManualMode && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border">
-              <div>
-                <label className="block text-sm font-medium mb-2">Tribunais</label>
-                <MultiSelect
-                  options={tribunalOptions}
-                  value={getSelectedValues()}
-                  onChange={handleTribunalSelection}
-                  placeholder="Selecione os tribunais..."
-                  maxCount={2}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Operações</label>
-                <Select
-                  value={selectedOperations[0]}
-                  onValueChange={(value: TribunalOperation) => setSelectedOperations([value])}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(OPERATION_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
         </div>
 
         <Button
           onClick={handleQuery}
-          disabled={isQuerying || (!isManualMode && !processInfo.tribunal)}
+          disabled={isQuerying || !processInfo.tribunal}
           className="w-full"
         >
           {isQuerying ? (
@@ -567,7 +454,7 @@ export default function TribunalMovements({
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {isManualMode ? 'Consultar Tribunais Selecionados' : `Consultar ${processInfo.tribunalName || 'Tribunal'}`}
+              Consultar {processInfo.tribunalName || 'Tribunal'}
             </>
           )}
         </Button>

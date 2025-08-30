@@ -3,7 +3,7 @@
 import { RealTribunalClient } from '../realTribunalClient.service';
 import { ProcessoTribunalData, MovimentacaoTribunal } from '@/types/tribunalIntegration';
 import * as cheerio from 'cheerio';
-import * as crypto from 'crypto';
+// Browser-compatible hash function
 
 interface ConsultaCAV {
   numeroProcesso: string;
@@ -361,7 +361,17 @@ class ReceitaFederalService {
   private generateConsultaHash(cpfCnpj: string): string {
     // Gerar hash simples para consulta (implementação específica da Receita)
     const timestamp = Date.now().toString();
-    return crypto.createHash('md5').update(cpfCnpj + timestamp).digest('hex').substring(0, 16);
+    const input = cpfCnpj + timestamp;
+    
+    // Simple hash function compatible with browser and Node.js
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return Math.abs(hash).toString(16).substring(0, 16);
   }
 
   async verificarDisponibilidade(): Promise<boolean> {

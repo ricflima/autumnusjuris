@@ -11,8 +11,13 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true,
+    host: '172.25.132.0',
     open: false,
+    cors: true,
+  },
+  preview: {
+    port: 5173,
+    host: '172.25.132.0',
     cors: true,
   },
 });
