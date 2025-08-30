@@ -46,6 +46,16 @@ Implementar consultas **100% reais e funcionais** a todos os órgãos jurisdicio
 - **Retry automático** com backoff exponencial
 - **Logs detalhados** de todas as operações
 
+### 💾 **5. Sistema de Persistência e Controle de Novidades**
+- **Armazenamento permanente** de todas as movimentações consultadas
+- **Histórico completo** mantido enquanto processo existir na base
+- **Detecção automática** de novas movimentações por comparação
+- **Tag "NOVO"** para movimentações recentes (válida por 48h)
+- **Timeline híbrida** exibindo dados locais + consultas em tempo real
+- **Sincronização inteligente** entre dados locais e tribunal
+- **Controle de TTL automático** para remoção da tag "NOVO"
+- **Auditoria completa** de quando cada movimentação foi descoberta
+
 ---
 
 ## 🏛️ TRIBUNAIS ALVO - IMPLEMENTAÇÃO FASEADA
@@ -191,8 +201,25 @@ CREATE TABLE tribunal_movements (
   movement_title TEXT NOT NULL,
   movement_description TEXT,
   is_judicial BOOLEAN DEFAULT true,
+  
+  -- Controle de novidades e persistência
+  discovered_at TIMESTAMP DEFAULT NOW(),
+  is_new BOOLEAN DEFAULT true,
+  new_until TIMESTAMP DEFAULT (NOW() + INTERVAL '48 hours'),
+  
+  -- Identificação única da movimentação no tribunal
+  tribunal_movement_id VARCHAR(100),
+  tribunal_hash VARCHAR(64), -- Hash MD5 para detectar duplicatas
+  
+  -- Auditoria
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  -- Índices para performance
+  UNIQUE(process_id, tribunal_code, tribunal_hash),
+  INDEX(process_id, movement_date DESC),
+  INDEX(is_new, new_until),
+  INDEX(tribunal_code, movement_date DESC)
 );
 
 -- Tabela de consultas realizadas
@@ -202,11 +229,49 @@ CREATE TABLE tribunal_consultations (
   tribunal_code VARCHAR(10) NOT NULL,
   consultation_status VARCHAR(20) NOT NULL,
   movements_count INTEGER DEFAULT 0,
+  new_movements_count INTEGER DEFAULT 0,
   last_movement_date TIMESTAMP,
   consultation_date TIMESTAMP DEFAULT NOW(),
   response_time_ms INTEGER,
-  error_message TEXT
+  error_message TEXT,
+  
+  -- Controle de consultas
+  is_scheduled BOOLEAN DEFAULT false,
+  next_consultation TIMESTAMP,
+  consultation_frequency_hours INTEGER DEFAULT 24,
+  
+  INDEX(process_id, consultation_date DESC),
+  INDEX(tribunal_code, consultation_status),
+  INDEX(next_consultation)
 );
+
+-- View para movimentações com status de novidade
+CREATE VIEW movements_with_new_status AS
+SELECT 
+  *,
+  CASE 
+    WHEN is_new AND new_until > NOW() THEN true 
+    ELSE false 
+  END as show_new_tag
+FROM tribunal_movements;
+
+-- Trigger para atualizar automaticamente o status de "novo"
+CREATE OR REPLACE FUNCTION update_movement_new_status()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Atualizar is_new baseado no new_until
+  UPDATE tribunal_movements 
+  SET is_new = false 
+  WHERE new_until <= NOW() AND is_new = true;
+  
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Criar trigger que executa a cada hora
+CREATE EVENT TRIGGER update_new_movements_status
+ON ddl_command_end
+EXECUTE FUNCTION update_movement_new_status();
 ```
 
 ---
@@ -221,8 +286,10 @@ CREATE TABLE tribunal_consultations (
 - [ ] **Parser CNJ:** Implementar reconhecimento completo do número processual
 - [ ] **Identificador de Tribunal:** Mapear códigos CNJ para tribunais  
 - [ ] **Classe Base Scraper:** Estrutura comum para todos os scrapers
-- [ ] **Database Schema:** Implementar tabelas de movimentações e consultas
+- [ ] **Database Schema:** Implementar tabelas de movimentações com persistência
 - [ ] **Sistema de Cache:** Redis/Memory cache com TTL configurável
+- [ ] **Sistema de Hash:** Detecção de duplicatas por hash MD5
+- [ ] **Controle de Novidades:** Lógica de tag "NOVO" com TTL de 48h
 
 #### **Semana 2: Backend - Serviços e APIs**
 - [ ] **Rate Limiter:** Controle de frequência por tribunal
@@ -230,6 +297,8 @@ CREATE TABLE tribunal_consultations (
 - [ ] **API Endpoints:** Rotas para consulta e histórico
 - [ ] **Error Handling:** Sistema robusto de tratamento de erros
 - [ ] **Logging System:** Auditoria completa das operações
+- [ ] **Serviço de Comparação:** Detectar novas movimentações automaticamente
+- [ ] **Job de Limpeza:** Remover tags "NOVO" após 48h automaticamente
 
 #### **Semana 3: Frontend - Interface Completa**
 - [ ] **Componentes Base:** TribunalConsultButton, ConsultStatus, Timeline
@@ -239,6 +308,9 @@ CREATE TABLE tribunal_consultations (
 - [ ] **Hooks Customizados:** useTribunalConsult, useMovements
 - [ ] **Types TypeScript:** Tipagem completa do sistema
 - [ ] **Sistema de Testes:** Testes unitários e de integração
+- [ ] **Tag "NOVO":** Componente visual para movimentações recentes
+- [ ] **Timeline Híbrida:** Exibir dados persistidos + consultas em tempo real
+- [ ] **Filtros de Novidades:** Filtrar por movimentações novas/antigas
 
 ### 🎯 **MILESTONE 1 - Primeira Implementação (TJSP)**
 **Prazo:** 1 semana
@@ -297,19 +369,23 @@ CREATE TABLE tribunal_consultations (
 1. **Usuário acessa processo:** Página de detalhes do processo
 2. **Sistema identifica tribunal:** Automático via número CNJ
 3. **Exibe informações:** "Processo TRT2 - Região: São Paulo"
-4. **Usuário clica "Consultar":** Botão único, sem seleção
-5. **Consulta em background:** Loading com progresso
-6. **Resultados exibidos:** Timeline de movimentações
-7. **Cache inteligente:** Próximas consultas instantâneas
+4. **Carrega histórico:** Movimentações já persistidas na base
+5. **Usuário clica "Consultar":** Botão único, sem seleção
+6. **Consulta em background:** Loading com progresso
+7. **Resultados híbridos:** Timeline com dados locais + novidades
+8. **Novas movimentações:** Marcadas com tag "NOVO" (48h)
+9. **Dados persistidos:** Salvos automaticamente para futuras consultas
 
 ### **📋 Fluxo de Consulta Global**
 1. **Usuário acessa "Andamentos":** Novo item do menu
-2. **Dashboard carrega:** Todos os processos do usuário
+2. **Dashboard carrega:** Todos os processos do usuário com histórico
 3. **Sistema identifica tribunais:** Automático para todos
-4. **Consulta em lote:** "Atualizar Todos" ou individual
-5. **Progresso visual:** Barra de progresso geral
-6. **Resultados categorizados:** Por tribunal e status
-7. **Alertas de novidades:** Destaque para atualizações
+4. **Mostra estatísticas:** Contadores de processos com novidades
+5. **Consulta em lote:** "Atualizar Todos" ou individual
+6. **Progresso visual:** Barra de progresso geral
+7. **Resultados categorizados:** Por tribunal, status e novidades
+8. **Alertas de novidades:** Destaque para processos com tags "NOVO"
+9. **Histórico preservado:** Todas as consultas anteriores mantidas
 
 ### **🎯 Indicadores Visuais**
 - 🟢 **Verde:** Consulta bem-sucedida, dados atualizados
@@ -317,6 +393,9 @@ CREATE TABLE tribunal_consultations (
 - 🔴 **Vermelho:** Erro na consulta, requer atenção
 - 🔵 **Azul:** Cache válido, dados recentes
 - ⚪ **Cinza:** Nunca consultado
+- 🆕 **Tag "NOVO":** Movimentações descobertas nas últimas 48h
+- 📅 **Data de descoberta:** Timestamp de quando foi detectada
+- 📊 **Contador de novidades:** Quantas novas movimentações por processo
 
 ---
 
@@ -329,6 +408,9 @@ CREATE TABLE tribunal_consultations (
 4. **Consulta Global:** Atualização de todos os processos de uma vez
 5. **Cache Inteligente:** Performance superior com dados sempre frescos
 6. **Feedback Rico:** Informações detalhadas do tribunal e processo
+7. **🆕 Persistência Inteligente:** Histórico completo de movimentações mantido
+8. **🆕 Controle de Novidades:** Tag "NOVO" automática por 48h
+9. **🆕 Timeline Híbrida:** Dados locais + consultas em tempo real
 
 ### **📈 Vantagens Técnicas:**
 - **Cobertura Nacional Completa:** Todos os tribunais brasileiros
