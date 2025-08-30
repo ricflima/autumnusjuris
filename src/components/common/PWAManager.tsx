@@ -46,7 +46,7 @@ export const PWAManager: React.FC<PWAManagerProps> = ({
     initPWA();
 
     // Event listeners for PWA events
-    const handleInstallAvailable = (e: any) => {
+    const handleInstallAvailable = () => {
       setCanInstall(true);
     };
 

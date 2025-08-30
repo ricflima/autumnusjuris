@@ -1,5 +1,4 @@
 // src/components/common/ProtectedRoute.tsx
-import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingScreen } from '@/components/common/LoadingScreen';

@@ -27,12 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { processesService } from '@/services/processes.service';
-import TribunalMovements from '@/components/processes/TribunalMovements';
 import { 
-  Process,
   ProcessDeadline, 
-  ProcessHearing, 
-  ProcessMovement,
   PROCESS_STATUS_LABELS,
   PROCESS_TYPE_LABELS,
   PROCESS_PHASE_LABELS,
@@ -75,12 +71,6 @@ export default function ProcessDetail() {
     enabled: !!id,
   });
 
-  // Query para buscar movimentações do processo
-  const { data: movements } = useQuery({
-    queryKey: ['process-movements', id],
-    queryFn: () => processesService.getProcessMovements(id!),
-    enabled: !!id,
-  });
 
   // Mutation para deletar processo
   const deleteProcessMutation = useMutation({
@@ -766,11 +756,14 @@ export default function ProcessDetail() {
         )}
 
         {activeTab === 'movements' && (
-          <TribunalMovements
-            processId={process.id}
-            processNumber={process.number}
-            currentMovements={movements || []}
-          />
+          <div className="space-y-4">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Movimentações do Processo</h3>
+              <p className="text-gray-600">
+                Funcionalidade de consulta aos tribunais será reimplementada em breve.
+              </p>
+            </Card>
+          </div>
         )}
       </div>
     </div>

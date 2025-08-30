@@ -1,5 +1,5 @@
 // src/App.tsx - Sistema de Gestão Jurídica
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -70,7 +70,6 @@ import SearchResults from '@/pages/search/SearchResults';
 import { DigitalSignatures } from '@/pages/signatures/DigitalSignatures';
 import { AIDocumentAnalysis } from '@/pages/ai/AIDocumentAnalysis';
 import { NotificationsPlaceholder } from '@/pages/notifications/NotificationsPlaceholder';
-import { TribunalIntegrations } from '@/pages/integrations/TribunalIntegrations';
 import { WhatsAppBusiness } from '@/pages/integrations/WhatsAppBusiness';
 import { AdvancedReports } from '@/pages/reports/AdvancedReports';
 
@@ -495,7 +494,10 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <TribunalIntegrations />
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold mb-4">Integrações com Tribunais</h1>
+                  <p className="text-gray-600">Funcionalidade será reimplementada em breve.</p>
+                </div>
               </Layout>
             </ProtectedRoute>
           }

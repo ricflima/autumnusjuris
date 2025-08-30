@@ -5,13 +5,6 @@ import toast from 'react-hot-toast';
 
 import { financialService } from '@/services/financial.service';
 import { 
-  Invoice,
-  Payment,
-  Expense,
-  FinancialSummary,
-  CashFlowProjection,
-  BankAccount,
-  FinancialTransaction,
   CreateInvoiceRequest,
   UpdateInvoiceRequest,
   CreatePaymentRequest,
