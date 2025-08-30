@@ -15,7 +15,8 @@ Este documento define as regras e boas práticas que devem ser seguidas sempre q
 ---
 
 ## 1. Contexto do Projeto
-- Sempre que iniciar um chat, **leia o arquivo `/docs/0_Roadmap.md`** para entender:
+- Nesse momento estamos na segunda implementação do nosso projeto, referente a consulta de processos.
+- Sempre que iniciar um chat, **leia o arquivo `/docs/0_Roadmap_v1.1.0.md`** para entender:
   - O backlog atual do projeto.  
   - As fases já concluídas e as pendentes.  
 
@@ -37,7 +38,7 @@ Este documento define as regras e boas práticas que devem ser seguidas sempre q
     ```
     e **corrija todos os erros encontrados**.  
     - Descreva entradas, saídas esperadas e critérios de aceitação.  
-  - Atualize `/docs/0_Roadmap.md`:
+  - Atualize `/docs/0_Roadmap_v1.1.0.md`:
     - Descreva **o que foi implementado**.  
     - Indique o que ainda **não foi concluído** (se a fase for parcial).  
     - Tambem exiba as proximas fases mostrando o que ainda falta ser desenvolvido nelas
