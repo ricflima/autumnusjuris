@@ -75,6 +75,7 @@ import { AdvancedReports } from '@/pages/reports/AdvancedReports';
 
 // Movement Consultation System - v1.1.0 Phase 0
 import MovementConsultation from '@/pages/MovementConsultation';
+import { TribunalConsultation } from '@/pages/TribunalConsultation';
 
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
@@ -498,6 +499,18 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <MovementConsultation />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Tribunal DataJud Consultation - v1.1.0 Phase 2 */}
+        <Route
+          path="/tribunals"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TribunalConsultation />
               </Layout>
             </ProtectedRoute>
           }

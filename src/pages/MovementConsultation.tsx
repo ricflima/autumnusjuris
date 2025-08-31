@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import TribunalMovementsService from '@/services/tribunalMovements.service';
+import TribunalApiService from '@/services/tribunalApi.service';
 
 interface ProcessConsultationResult {
   processNumber: string;
@@ -24,13 +24,13 @@ export default function MovementConsultation() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [lastConsultation, setLastConsultation] = useState<Date | null>(null);
 
-  const service = TribunalMovementsService.getInstance();
+  const service = TribunalApiService.getInstance();
 
   // Função para buscar todos os processos do usuário
   const fetchUserProcesses = async (): Promise<string[]> => {
     try {
       // Buscar processos reais do banco de dados
-      const response = await fetch(`/api/processes?userId=${user?.id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://172.25.132.0:3001/api'}/processes?userId=${user?.id}`);
       if (response.ok) {
         const data = await response.json();
         return data.processes.map((p: any) => p.number).filter(Boolean);
@@ -73,8 +73,41 @@ export default function MovementConsultation() {
         try {
           // Identificar tribunal pelo CNJ
           const validation = service.validateCNJNumber(processNumber);
-          if (validation.isValid && validation.tribunalInfo) {
-            result.tribunal = validation.tribunalInfo.name;
+          if (validation.isValid && validation.parsedNumber) {
+            const segmento = validation.parsedNumber.segmentoJudiciario;
+            const tribunal = validation.parsedNumber.tribunal;
+            const codigo = segmento + tribunal;
+            
+            // Mapeamento baseado no código CNJ
+            const tribunalMap: Record<string, string> = {
+              // Tribunais Federais
+              '401': 'TRF da 1ª Região',
+              '402': 'TRF da 2ª Região', 
+              '403': 'TRF da 3ª Região',
+              '404': 'TRF da 4ª Região',
+              '405': 'TRF da 5ª Região',
+              '406': 'TRF da 6ª Região',
+              
+              // Tribunais de Justiça
+              '825': 'Tribunal de Justiça de São Paulo',
+              '826': 'Tribunal de Justiça de São Paulo',
+              '819': 'Tribunal de Justiça do Rio de Janeiro',
+              '813': 'Tribunal de Justiça de Minas Gerais',
+              '821': 'Tribunal de Justiça do Rio Grande do Sul',
+              '816': 'Tribunal de Justiça do Paraná',
+              '807': 'Tribunal de Justiça de Santa Catarina',
+              '805': 'Tribunal de Justiça da Bahia',
+              '803': 'Tribunal de Justiça do Ceará',
+              
+              // Tribunais do Trabalho
+              '501': 'TRT da 1ª Região (RJ)',
+              '502': 'TRT da 2ª Região (SP)', 
+              '503': 'TRT da 3ª Região (MG)',
+              '504': 'TRT da 4ª Região (RS)',
+              '509': 'TRT da 9ª Região (PR)'
+            };
+            
+            result.tribunal = tribunalMap[codigo] || validation.tribunalInfo?.segmento || `Tribunal ${codigo}`;
           }
           
           // Consultar movimentações

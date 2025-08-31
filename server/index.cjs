@@ -1387,6 +1387,9 @@ app.get('/api/tribunal/processes/:cnj', async (req, res) => {
   }
 });
 
+// Importar serviço DataJud local
+const DatajudService = require('./datajud-service.cjs');
+
 // Movimentações - Atualizado para estrutura DataJud v1.1.0
 app.post('/api/tribunal/movements/batch', async (req, res) => {
   try {
@@ -1403,43 +1406,28 @@ app.post('/api/tribunal/movements/batch', async (req, res) => {
 
     // Se recebeu lista de números de processo para consultar
     if (processNumbers && Array.isArray(processNumbers)) {
-      for (const processNumber of processNumbers) {
-        try {
-          // Simular consulta DataJud (em produção seria TribunalMovementsService)
-          const mockMovements = [
-            {
-              cnj_number: processNumber,
-              clean_number: processNumber.replace(/\D/g, ''),
-              tribunal_code: processNumber.substring(13, 15),
-              tribunal_name: 'Tribunal via DataJud',
-              movement_date: new Date(),
-              title: `Movimentação simulada para ${processNumber}`,
-              description: 'Movimentação de teste via DataJud API',
-              content: JSON.stringify({ source: 'datajud', processNumber }),
-              hash: `hash_${Date.now()}_${Math.random()}`,
-              is_judicial: true,
-              is_novelty: false
-            }
-          ];
-
-          results.push({
-            processNumber,
-            success: true,
-            movements: mockMovements.length,
-            newMovements: mockMovements.length
-          });
-
-          persisted += mockMovements.length;
-          newMovements += mockMovements.length;
-
-        } catch (error) {
-          console.error(`Erro ao processar ${processNumber}:`, error);
-          results.push({
-            processNumber,
-            success: false,
-            error: error.message
-          });
+      const datajudService = new DatajudService();
+      
+      console.log(`[API] Iniciando consulta de ${processNumbers.length} processos via DataJud`);
+      
+      // Usar o método de lote do serviço DataJud
+      const batchResult = await datajudService.processarLote(processNumbers);
+      
+      results = batchResult.results;
+      
+      // Calcular estatísticas
+      results.forEach(result => {
+        if (result.success) {
+          persisted += result.totalMovements || 0;
+          newMovements += result.newMovements || 0;
         }
+      });
+
+      console.log(`[API] Lote concluído: ${batchResult.summary.successful}/${batchResult.summary.total} sucessos`);
+      console.log(`[API] Total de movimentações: ${batchResult.summary.totalMovements}`);
+      
+      if (batchResult.errors.length > 0) {
+        console.log(`[API] Erros: ${batchResult.errors.join(', ')}`);
       }
     }
 
@@ -1494,6 +1482,46 @@ app.post('/api/tribunal/movements/batch', async (req, res) => {
   } catch (error) {
     console.error('Erro ao persistir movimentações:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Consulta individual de movimentações - endpoint para frontend
+app.post('/api/movements/query', async (req, res) => {
+  try {
+    const { processNumber, options = {} } = req.body;
+    
+    if (!processNumber) {
+      return res.status(400).json({ error: 'Número do processo é obrigatório' });
+    }
+
+    console.log(`[API] Consulta individual: ${processNumber}`);
+    
+    const datajudService = new DatajudService();
+    
+    // Usar serviço DataJud para consulta
+    const result = await datajudService.consultarProcesso(processNumber);
+    
+    // Adicionar informações extras para compatibilidade com frontend
+    const response = {
+      ...result,
+      fromCache: result.fromCache || false,
+      enablePersistence: options.enablePersistence || false,
+      enableNoveltyDetection: options.enableNoveltyDetection || false
+    };
+    
+    console.log(`[API] Consulta concluída: ${result.success ? 'sucesso' : 'falha'} - ${result.totalMovements || 0} movimentações`);
+    
+    res.json(response);
+  } catch (error) {
+    console.error('[API] Erro na consulta individual:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Erro interno do servidor',
+      processNumber: req.body.processNumber || 'N/A',
+      movements: [],
+      totalMovements: 0,
+      newMovements: 0
+    });
   }
 });
 

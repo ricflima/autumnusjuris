@@ -287,6 +287,7 @@ export class DatajudParser {
 
   /**
    * Gerar hash MD5 para deduplicação
+   * Implementação simples que funciona tanto no Node.js quanto no browser
    */
   private static generateMovementHash(data: {
     processNumber: string;
@@ -295,9 +296,19 @@ export class DatajudParser {
     code: number;
     name: string;
   }): string {
-    const crypto = require('crypto');
     const hashInput = `${data.tribunal}-${data.processNumber}-${data.date.toISOString()}-${data.code}-${data.name}`;
-    return crypto.createHash('md5').update(hashInput).digest('hex');
+    
+    // Hash simples usando função matemática (para compatibilidade)
+    let hash = 0;
+    for (let i = 0; i < hashInput.length; i++) {
+      const char = hashInput.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Converter para 32-bit integer
+    }
+    
+    // Converter para hexadecimal e garantir 32 caracteres
+    const hexHash = Math.abs(hash).toString(16).padStart(8, '0');
+    return hexHash + Date.now().toString(16).slice(-8); // 16 caracteres no total
   }
 
   /**
@@ -327,8 +338,8 @@ export class DatajudParser {
       return false;
     }
 
-    // Validar hash
-    if (!movement.hash || movement.hash.length !== 32) {
+    // Validar hash (aceitar tanto MD5 32 chars quanto nosso formato 16 chars)
+    if (!movement.hash || (movement.hash.length !== 32 && movement.hash.length !== 16)) {
       return false;
     }
 
@@ -414,5 +425,163 @@ export class DatajudParser {
 
       return true;
     });
+  }
+
+  /**
+   * Normalizar número do processo
+   */
+  static normalizeProcessNumber(processNumber: string): string {
+    return processNumber.replace(/[^\d]/g, '');
+  }
+
+  /**
+   * Extrair informações do tribunal do número CNJ
+   */
+  static extractTribunalInfo(processNumber: string): {
+    success: boolean;
+    segmento?: string;
+    tribunal?: string;
+    orgao?: string;
+    error?: string;
+  } {
+    const cnjRegex = /^\d{7}-\d{2}\.\d{4}\.(\d)\.(\d{2})\.(\d{4})$/;
+    const match = processNumber.match(cnjRegex);
+    
+    if (!match) {
+      return {
+        success: false,
+        error: 'Formato CNJ inválido'
+      };
+    }
+
+    const [, segmento, tribunal, orgao] = match;
+    
+    return {
+      success: true,
+      segmento,
+      tribunal,
+      orgao
+    };
+  }
+
+  /**
+   * Detectar movimentos duplicados por hash
+   */
+  static detectDuplicateMovements(movements: TribunalMovement[]): {
+    unique: TribunalMovement[];
+    duplicates: TribunalMovement[];
+    duplicateHashes: string[];
+  } {
+    const seen = new Map<string, TribunalMovement>();
+    const duplicates: TribunalMovement[] = [];
+    
+    movements.forEach(movement => {
+      if (seen.has(movement.hash)) {
+        duplicates.push(movement);
+      } else {
+        seen.set(movement.hash, movement);
+      }
+    });
+
+    return {
+      unique: Array.from(seen.values()),
+      duplicates,
+      duplicateHashes: Array.from(new Set(duplicates.map(d => d.hash)))
+    };
+  }
+
+  /**
+   * Identificar movimentos críticos
+   */
+  static identifyCriticalMovements(movements: TribunalMovement[]): TribunalMovement[] {
+    const criticalKeywords = [
+      'sentença', 'decisão', 'liminar', 'tutela', 'mandado',
+      'citação', 'intimação', 'penhora', 'bloqueio',
+      'transitado em julgado', 'baixa', 'arquivamento',
+      'extinção', 'homologação', 'condenação'
+    ];
+
+    return movements.filter(movement => {
+      const text = `${movement.title} ${movement.description}`.toLowerCase();
+      return criticalKeywords.some(keyword => text.includes(keyword));
+    });
+  }
+
+  /**
+   * Agrupar movimentos por tipo
+   */
+  static groupMovementsByType(movements: TribunalMovement[]): {
+    judiciais: TribunalMovement[];
+    administrativos: TribunalMovement[];
+    criticos: TribunalMovement[];
+    recentes: TribunalMovement[];
+  } {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    return {
+      judiciais: movements.filter(m => m.isJudicial),
+      administrativos: movements.filter(m => !m.isJudicial),
+      criticos: this.identifyCriticalMovements(movements),
+      recentes: movements.filter(m => m.movementDate >= sevenDaysAgo)
+    };
+  }
+
+  /**
+   * Gerar resumo executivo dos movimentos
+   */
+  static generateExecutiveSummary(movements: TribunalMovement[]): {
+    totalMovements: number;
+    judicialMovements: number;
+    administrativeMovements: number;
+    criticalMovements: number;
+    recentMovements: number;
+    lastMovementDate?: Date;
+    tribunalsCovered: string[];
+    timeRange: {
+      start?: Date;
+      end?: Date;
+      durationDays?: number;
+    };
+    topMovementTypes: Array<{ type: string; count: number }>;
+  } {
+    const groups = this.groupMovementsByType(movements);
+    const stats = this.getParsingStats(movements);
+    
+    // Top tipos de movimentos
+    const typeCount = new Map<string, number>();
+    movements.forEach(m => {
+      const type = m.title.split(' ').slice(0, 3).join(' '); // Primeiras 3 palavras
+      typeCount.set(type, (typeCount.get(type) || 0) + 1);
+    });
+    
+    const topMovementTypes = Array.from(typeCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([type, count]) => ({ type, count }));
+
+    let durationDays: number | undefined;
+    if (stats.primeiraMovimentacao && stats.ultimaMovimentacao) {
+      durationDays = Math.ceil(
+        (stats.ultimaMovimentacao.getTime() - stats.primeiraMovimentacao.getTime()) / 
+        (24 * 60 * 60 * 1000)
+      );
+    }
+
+    return {
+      totalMovements: movements.length,
+      judicialMovements: groups.judiciais.length,
+      administrativeMovements: groups.administrativos.length,
+      criticalMovements: groups.criticos.length,
+      recentMovements: groups.recentes.length,
+      lastMovementDate: stats.ultimaMovimentacao,
+      tribunalsCovered: Object.keys(stats.porTribunal),
+      timeRange: {
+        start: stats.primeiraMovimentacao,
+        end: stats.ultimaMovimentacao,
+        durationDays
+      },
+      topMovementTypes
+    };
   }
 }

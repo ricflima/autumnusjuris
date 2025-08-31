@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import TribunalMovementsService from '@/services/tribunalMovements.service';
+import TribunalApiService from '@/services/tribunalApi.service';
+import MovementsDashboard from './MovementsDashboard';
 
 interface ProcessSearchProps {
   onResultsFound?: (results: any) => void;
@@ -26,7 +27,47 @@ export const ProcessSearch: React.FC<ProcessSearchProps> = ({
   const [error, setError] = useState<string>('');
   const [validationInfo, setValidationInfo] = useState<any>(null);
 
-  const service = TribunalMovementsService.getInstance();
+  const service = TribunalApiService.getInstance();
+
+  // Função para obter nome do tribunal baseado no CNJ
+  const getTribunalName = (validation: any) => {
+    if (!validation.isValid || !validation.parsedNumber) return 'Número CNJ inválido';
+    
+    const segmento = validation.parsedNumber.segmentoJudiciario;
+    const tribunal = validation.parsedNumber.tribunal;
+    const codigo = segmento + tribunal;
+    
+    // Mapeamento baseado no código CNJ
+    const tribunalMap: Record<string, string> = {
+      // Tribunais Federais
+      '401': 'TRF da 1ª Região',
+      '402': 'TRF da 2ª Região', 
+      '403': 'TRF da 3ª Região',
+      '404': 'TRF da 4ª Região',
+      '405': 'TRF da 5ª Região',
+      '406': 'TRF da 6ª Região',
+      
+      // Tribunais de Justiça
+      '825': 'Tribunal de Justiça de São Paulo',
+      '826': 'Tribunal de Justiça de São Paulo',
+      '819': 'Tribunal de Justiça do Rio de Janeiro',
+      '813': 'Tribunal de Justiça de Minas Gerais',
+      '821': 'Tribunal de Justiça do Rio Grande do Sul',
+      '816': 'Tribunal de Justiça do Paraná',
+      '807': 'Tribunal de Justiça de Santa Catarina',
+      '805': 'Tribunal de Justiça da Bahia',
+      '803': 'Tribunal de Justiça do Ceará',
+      
+      // Tribunais do Trabalho
+      '501': 'TRT da 1ª Região (RJ)',
+      '502': 'TRT da 2ª Região (SP)', 
+      '503': 'TRT da 3ª Região (MG)',
+      '504': 'TRT da 4ª Região (RS)',
+      '509': 'TRT da 9ª Região (PR)'
+    };
+    
+    return tribunalMap[codigo] || validation.tribunalInfo?.segmento || `Tribunal ${codigo}`;
+  };
 
   // Validar número CNJ em tempo real
   const handleProcessNumberChange = (value: string) => {
@@ -114,7 +155,7 @@ export const ProcessSearch: React.FC<ProcessSearchProps> = ({
                 <div className="mt-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span>{validationInfo.parsedNumber.tribunalName}</span>
+                    <span>{getTribunalName(validationInfo)}</span>
                   </div>
                   <div className="ml-6">
                     Segmento: {validationInfo.parsedNumber.judiciarySegmentName} • Ano: {validationInfo.parsedNumber.year}
@@ -300,6 +341,18 @@ export const ProcessSearch: React.FC<ProcessSearchProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Dashboard de Movimentações */}
+                {results.movements && results.movements.length > 0 && (
+                  <div className="mt-6">
+                    <MovementsDashboard 
+                      movements={results.movements}
+                      processNumber={results.processNumber}
+                      tribunal={results.tribunal}
+                      showFilters={results.movements.length > 5}
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <Alert variant="destructive">

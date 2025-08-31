@@ -4,8 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CNJInfoCard } from './CNJInfoCard';
-import TribunalMovementsService from '@/services/tribunalMovements.service';
+import TribunalApiService from '@/services/tribunalApi.service';
 
 interface ProcessMovementConsultProps {
   processNumber: string;
@@ -30,15 +29,57 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
   const [isConsulting, setIsConsulting] = useState(false);
   const [result, setResult] = useState<MovementResult | null>(null);
   const [lastConsultation, setLastConsultation] = useState<Date | null>(null);
+  const [showAllMovements, setShowAllMovements] = useState(false);
 
-  const service = TribunalMovementsService.getInstance();
+  const service = TribunalApiService.getInstance();
   const validation = service.validateCNJNumber(processNumber);
+
+  // Função para obter nome do tribunal baseado no CNJ
+  const getTribunalName = (validation: any) => {
+    if (!validation.isValid || !validation.parsedNumber) return 'Número CNJ inválido';
+    
+    const segmento = validation.parsedNumber.segmentoJudiciario;
+    const tribunal = validation.parsedNumber.tribunal;
+    const codigo = segmento + tribunal;
+    
+    // Mapeamento baseado no código CNJ
+    const tribunalMap: Record<string, string> = {
+      // Tribunais Federais
+      '401': 'TRF da 1ª Região',
+      '402': 'TRF da 2ª Região', 
+      '403': 'TRF da 3ª Região',
+      '404': 'TRF da 4ª Região',
+      '405': 'TRF da 5ª Região',
+      '406': 'TRF da 6ª Região',
+      
+      // Tribunais de Justiça
+      '825': 'Tribunal de Justiça de São Paulo',
+      '826': 'Tribunal de Justiça de São Paulo',
+      '819': 'Tribunal de Justiça do Rio de Janeiro',
+      '813': 'Tribunal de Justiça de Minas Gerais',
+      '821': 'Tribunal de Justiça do Rio Grande do Sul',
+      '816': 'Tribunal de Justiça do Paraná',
+      '807': 'Tribunal de Justiça de Santa Catarina',
+      '805': 'Tribunal de Justiça da Bahia',
+      '803': 'Tribunal de Justiça do Ceará',
+      
+      // Tribunais do Trabalho
+      '501': 'TRT da 1ª Região (RJ)',
+      '502': 'TRT da 2ª Região (SP)', 
+      '503': 'TRT da 3ª Região (MG)',
+      '504': 'TRT da 4ª Região (RS)',
+      '509': 'TRT da 9ª Região (PR)'
+    };
+    
+    return tribunalMap[codigo] || validation.tribunalInfo?.segmento || `Tribunal ${codigo}`;
+  };
 
   const consultMovements = async () => {
     if (isConsulting || !validation.isValid) return;
     
     setIsConsulting(true);
     setResult(null);
+    setShowAllMovements(false);
     
     try {
       await service.initialize();
@@ -51,10 +92,10 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
       
       const consultResult: MovementResult = {
         success: queryResult.success,
-        tribunal: validation.tribunalInfo?.name || 'Tribunal não identificado',
+        tribunal: getTribunalName(validation),
         newMovements: queryResult.newMovements || 0,
         totalMovements: queryResult.totalMovements || 0,
-        movements: queryResult.processInfo?.movements || [],
+        movements: queryResult.movements || [],
         fromCache: queryResult.fromCache || false,
         lastUpdate: new Date()
       };
@@ -68,13 +109,13 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
       
       // Notificar componente pai se houver movimentações
       if (queryResult.success && onMovementsFound) {
-        onMovementsFound(queryResult.processInfo?.movements || []);
+        onMovementsFound(queryResult.movements || []);
       }
       
     } catch (error) {
       const errorResult: MovementResult = {
         success: false,
-        tribunal: validation.tribunalInfo?.name || 'Tribunal não identificado',
+        tribunal: getTribunalName(validation),
         newMovements: 0,
         totalMovements: 0,
         error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -110,9 +151,6 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Card de Informações CNJ */}
-      <CNJInfoCard processNumber={processNumber} />
-
       {/* Card de Consulta */}
       <Card>
         <CardHeader>
@@ -187,8 +225,8 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
           {result && result.success && result.movements && result.movements.length > 0 && (
             <div>
               <h4 className="font-medium mb-3">Últimas Movimentações</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {result.movements.slice(0, 5).map((movement, index) => (
+              <div className={`space-y-2 overflow-y-auto ${showAllMovements ? 'max-h-96' : 'max-h-60'}`}>
+                {(showAllMovements ? result.movements : result.movements.slice(0, 5)).map((movement, index) => (
                   <div key={index} className="p-3 border rounded-lg bg-white">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -196,7 +234,7 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
                         <p className="text-xs text-gray-600 mt-1">{movement.description}</p>
                       </div>
                       <div className="text-xs text-gray-500 ml-3">
-                        {new Date(movement.date).toLocaleDateString('pt-BR')}
+                        {new Date(movement.movementDate).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                     {movement.isNew && (
@@ -207,8 +245,15 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
                 
                 {result.movements.length > 5 && (
                   <div className="text-center p-2">
-                    <Button variant="outline" size="sm">
-                      Ver todas as {result.movements.length} movimentações
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowAllMovements(!showAllMovements)}
+                    >
+                      {showAllMovements 
+                        ? `Mostrar menos movimentações`
+                        : `Ver todas as ${result.movements.length} movimentações`
+                      }
                     </Button>
                   </div>
                 )}
@@ -225,15 +270,6 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
             </div>
           )}
 
-          {/* Informação sobre tribunal não suportado */}
-          {validation.isValid && !validation.tribunalInfo && (
-            <Alert>
-              <AlertTriangle className="w-4 h-4" />
-              <AlertDescription>
-                Este tribunal ainda não foi implementado. A funcionalidade será adicionada em futuras versões.
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
     </div>

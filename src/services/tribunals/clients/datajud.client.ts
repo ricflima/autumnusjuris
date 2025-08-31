@@ -1,10 +1,13 @@
-import { TribunalMovement, ScrapingResult } from '../../../types/tribunal.types';
+import { TribunalMovement } from '../../../types/tribunal.types';
+import { CNJDatajudMapper } from '../mappers/cnj-datajud.mapper';
+import { DatajudParser } from '../parsers/datajud.parser';
 
 interface DatajudConfig {
   baseUrl: string;
   apiKey: string;
   timeout: number;
   maxRetries: number;
+  rateLimitMs: number;
 }
 
 interface DatajudResponse {
@@ -84,17 +87,55 @@ interface DatajudMovement {
   };
 }
 
+interface DatajudQueryResult {
+  success: boolean;
+  processNumber: string;
+  tribunal: string;
+  movements: TribunalMovement[];
+  totalMovements: number;
+  newMovements: number;
+  queryDuration: number;
+  fromCache: false;
+  source: 'datajud';
+  error?: string;
+  rawData?: DatajudProcess;
+  metadata: {
+    tribunal: string;
+    processNumber?: string;
+    consultationDate: Date;
+    responseTime: number;
+    totalMovements: number;
+    source: string;
+    lastUpdate?: Date;
+    dataSource?: any;
+  };
+}
+
+/**
+ * Cliente real para API DataJud do CNJ
+ * Implementa consultas HTTP reais para https://api-publica.datajud.cnj.jus.br
+ */
 export class DatajudClient {
   private config: DatajudConfig;
   private static instance: DatajudClient;
+  private lastRequestTime: number = 0;
 
   private constructor() {
     this.config = {
-      baseUrl: 'https://api-publica.datajud.cnj.jus.br',
-      apiKey: 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==',
-      timeout: 30000,
-      maxRetries: 3
+      baseUrl: process.env.DATAJUD_BASE_URL || 'https://api-publica.datajud.cnj.jus.br',
+      apiKey: process.env.DATAJUD_API_KEY || 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==',
+      timeout: parseInt(process.env.DATAJUD_TIMEOUT || '30000'),
+      maxRetries: parseInt(process.env.DATAJUD_MAX_RETRIES || '3'),
+      rateLimitMs: parseInt(process.env.DATAJUD_RATE_LIMIT_MS || '1000')
     };
+
+    console.log('[DataJud] Configuração inicializada:', {
+      baseUrl: this.config.baseUrl,
+      timeout: this.config.timeout,
+      maxRetries: this.config.maxRetries,
+      rateLimitMs: this.config.rateLimitMs,
+      apiKeySet: !!this.config.apiKey
+    });
   }
 
   static getInstance(): DatajudClient {
@@ -105,13 +146,111 @@ export class DatajudClient {
   }
 
   /**
+   * Mapeia código do tribunal para endpoint DataJud
+   */
+  private getEndpointByTribunal(tribunalCode: string): string | null {
+    // Usar mapeamento centralizado CNJDatajudMapper
+    const mapping = CNJDatajudMapper.mapTribunalCodeToDatajud(tribunalCode);
+    
+    if (mapping.success && mapping.endpoint) {
+      return mapping.endpoint;
+    }
+    
+    console.warn(`[DataJud] Tribunal ${tribunalCode} não encontrado no mapeamento`);
+    return null;
+  }
+
+  /**
+   * Aplica rate limiting entre requests
+   */
+  private async applyRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.config.rateLimitMs) {
+      const waitTime = this.config.rateLimitMs - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastRequestTime = Date.now();
+  }
+
+  /**
+   * Executa requisição HTTP para API DataJud
+   */
+  private async makeRequest(endpoint: string, numeroProcesso: string): Promise<DatajudResponse> {
+    await this.applyRateLimit();
+    
+    const url = `${this.config.baseUrl}/${endpoint}/_search`;
+    const cleanNumber = numeroProcesso.replace(/\D/g, '');
+    
+    const payload = {
+      query: {
+        match: {
+          numeroProcesso: cleanNumber
+        }
+      },
+      size: 10,
+      sort: [
+        { '@timestamp': { order: 'desc' } }
+      ]
+    };
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `APIKey ${this.config.apiKey}`,
+      'User-Agent': 'AutumnusJuris-v1.1.0-DataJud-Client'
+    };
+
+    console.log(`[DataJud] POST ${url}`);
+    console.log(`[DataJud] Query:`, JSON.stringify(payload, null, 2));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: DatajudResponse = await response.json();
+      console.log(`[DataJud] Response: ${data.hits.total.value} hits found`);
+      
+      return data;
+      
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`Timeout após ${this.config.timeout}ms`);
+        }
+        throw error;
+      }
+      
+      throw new Error('Erro desconhecido na requisição DataJud');
+    }
+  }
+
+
+
+  /**
    * Consulta processo por número CNJ em tribunal específico
    */
-  async consultarProcesso(numeroProcesso: string, tribunalCode: string): Promise<ScrapingResult> {
+  async consultarProcesso(numeroProcesso: string, tribunalCode: string): Promise<DatajudQueryResult> {
     const startTime = Date.now();
     
     try {
-      console.log(`[DataJud] Consultando processo ${numeroProcesso} no ${tribunalCode}`);
+      console.log(`[DataJud] Iniciando consulta: ${numeroProcesso} no tribunal ${tribunalCode}`);
 
       // Determinar endpoint do tribunal
       const endpoint = this.getEndpointByTribunal(tribunalCode);
@@ -119,77 +258,112 @@ export class DatajudClient {
         throw new Error(`Tribunal ${tribunalCode} não disponível na API DataJud`);
       }
 
-      // Limpar número do processo (remover formatação)
-      const cleanProcessNumber = numeroProcesso.replace(/[^0-9]/g, '');
-
-      // Construir query para busca
-      const query = {
-        query: {
-          match: {
-            numeroProcesso: cleanProcessNumber
-          }
-        },
-        size: 1 // Esperamos apenas 1 resultado para consulta específica
-      };
-
-      // Realizar consulta
-      const response = await this.makeRequest(endpoint, query);
+      let lastError: Error | null = null;
       
-      if (!response.hits?.hits?.length) {
-        return {
-          success: false,
-          error: `Processo ${numeroProcesso} não encontrado no ${tribunalCode}`,
-          movements: [],
-          metadata: {
-            tribunal: tribunalCode,
-            processNumber: numeroProcesso,
-            consultationDate: new Date(),
-            responseTime: Date.now() - startTime,
-            totalMovements: 0,
-            source: 'api-publica.datajud.cnj.jus.br'
+      // Retry loop
+      for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+        try {
+          console.log(`[DataJud] Tentativa ${attempt}/${this.config.maxRetries}`);
+          
+          const response = await this.makeRequest(endpoint, numeroProcesso);
+          
+          if (response.hits.total.value === 0) {
+            return {
+              success: false,
+              processNumber: numeroProcesso,
+              tribunal: tribunalCode,
+              movements: [],
+              totalMovements: 0,
+              newMovements: 0,
+              queryDuration: Date.now() - startTime,
+              fromCache: false,
+              source: 'datajud',
+              error: 'Processo não encontrado na base DataJud',
+              metadata: {
+                tribunal: tribunalCode,
+                processNumber: numeroProcesso,
+                consultationDate: new Date(),
+                responseTime: Date.now() - startTime,
+                totalMovements: 0,
+                source: 'api-publica.datajud.cnj.jus.br'
+              }
+            };
           }
-        };
+
+          // Processar primeiro resultado
+          const firstHit = response.hits.hits[0];
+          const process = firstHit._source;
+          
+          // Usar parser para converter processo completo
+          const parseResult = DatajudParser.parseProcess(process);
+          
+          if (!parseResult.success) {
+            throw new Error(parseResult.error || 'Erro ao processar dados DataJud');
+          }
+          
+          const movements = parseResult.movements || [];
+          
+          console.log(`[DataJud] Sucesso: ${movements.length} movimentos encontrados`);
+
+          return {
+            success: true,
+            processNumber: numeroProcesso,
+            tribunal: process.tribunal || tribunalCode,
+            movements,
+            totalMovements: movements.length,
+            newMovements: movements.length, // Todos são "novos" na primeira consulta
+            queryDuration: Date.now() - startTime,
+            fromCache: false,
+            source: 'datajud',
+            rawData: process,
+            metadata: {
+              tribunal: process.tribunal || tribunalCode,
+              processNumber: numeroProcesso,
+              consultationDate: new Date(),
+              responseTime: Date.now() - startTime,
+              totalMovements: movements.length,
+              source: 'api-publica.datajud.cnj.jus.br',
+              dataSource: {
+                hit: firstHit,
+                processMetadata: parseResult.metadata
+              }
+            }
+          };
+          
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('Erro desconhecido');
+          console.error(`[DataJud] Tentativa ${attempt} falhou:`, lastError.message);
+          
+          if (attempt < this.config.maxRetries) {
+            const delay = Math.pow(2, attempt) * 1000; // Backoff exponencial
+            console.log(`[DataJud] Aguardando ${delay}ms antes da próxima tentativa...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
       }
 
-      // Processar resultado
-      const processData = response.hits.hits[0]._source;
-      const movements = this.parseMovements(processData, numeroProcesso);
-
-      const endTime = Date.now();
-      const responseTime = endTime - startTime;
-
-      console.log(`[DataJud] Consulta concluída: ${movements.length} movimentações em ${responseTime}ms`);
-
-      return {
-        success: true,
-        movements,
-        metadata: {
-          tribunal: tribunalCode,
-          processNumber: numeroProcesso,
-          consultationDate: new Date(),
-          responseTime,
-          totalMovements: movements.length,
-          source: 'api-publica.datajud.cnj.jus.br',
-          lastUpdate: new Date(processData.dataHoraUltimaAtualizacao),
-          dataSource: processData
-        }
-      };
-
+      // Todas as tentativas falharam
+      throw lastError || new Error('Falha na consulta DataJud após todas as tentativas');
+      
     } catch (error) {
-      const endTime = Date.now();
-      const responseTime = endTime - startTime;
-
-      console.error(`[DataJud] Erro na consulta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-
+      console.error(`[DataJud] Erro final:`, error);
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido na API DataJud',
+        processNumber: numeroProcesso,
+        tribunal: tribunalCode,
         movements: [],
+        totalMovements: 0,
+        newMovements: 0,
+        queryDuration: Date.now() - startTime,
+        fromCache: false,
+        source: 'datajud',
+        error: error instanceof Error ? error.message : 'Erro desconhecido na consulta DataJud',
         metadata: {
           tribunal: tribunalCode,
           processNumber: numeroProcesso,
           consultationDate: new Date(),
-          responseTime,
+          responseTime: Date.now() - startTime,
           totalMovements: 0,
           source: 'api-publica.datajud.cnj.jus.br'
         }
@@ -198,311 +372,135 @@ export class DatajudClient {
   }
 
   /**
-   * Consulta múltiplos processos de um tribunal (com paginação)
+   * Obter tribunais disponíveis na API DataJud
    */
-  async consultarMultiplosProcessos(
-    tribunalCode: string, 
-    options: {
-      size?: number;
-      searchAfter?: number[];
-      filters?: any;
-    } = {}
-  ): Promise<{
-    success: boolean;
-    processes: DatajudProcess[];
-    searchAfter?: number[];
-    total: number;
-    error?: string;
+  getTribunaisDisponiveis(): Array<{
+    code: string;
+    name: string;
+    type: string;
+    endpoint: string;
   }> {
+    return CNJDatajudMapper.getAllTribunals().map(tribunal => ({
+      code: tribunal.datajudCode,
+      name: tribunal.name,
+      type: tribunal.type,
+      endpoint: `api_publica_${tribunal.datajudCode.toLowerCase()}`
+    }));
+  }
+
+  /**
+   * Processar múltiplos processos em lote
+   */
+  async processarLote(processNumbers: string[]): Promise<{
+    success: boolean;
+    results: DatajudQueryResult[];
+    summary: {
+      total: number;
+      successful: number;
+      failed: number;
+      totalMovements: number;
+      tribunals: string[];
+    };
+    errors: string[];
+  }> {
+    console.log(`[DataJud] Processando lote de ${processNumbers.length} processos`);
+    
+    const results: DatajudQueryResult[] = [];
+    const errors: string[] = [];
+    const tribunalsSet = new Set<string>();
+    let totalMovements = 0;
+    
+    // Processar sequencialmente para respeitar rate limit
+    for (const processNumber of processNumbers) {
+      try {
+        // Identificar tribunal pelo número CNJ
+        const mapping = CNJDatajudMapper.mapCNJToDatajud(processNumber);
+        
+        if (!mapping.success) {
+          const errorMsg = `${processNumber}: ${mapping.error}`;
+          errors.push(errorMsg);
+          console.warn(`[DataJud] ${errorMsg}`);
+          continue;
+        }
+
+        const result = await this.consultarProcesso(processNumber, mapping.tribunalCode!);
+        results.push(result);
+        
+        if (result.success) {
+          totalMovements += result.totalMovements;
+          tribunalsSet.add(result.tribunal);
+        } else {
+          errors.push(`${processNumber}: ${result.error}`);
+        }
+
+      } catch (error) {
+        const errorMsg = `${processNumber}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+        errors.push(errorMsg);
+        console.error(`[DataJud] Erro no lote:`, error);
+      }
+    }
+
+    const successful = results.filter(r => r.success).length;
+    const failed = results.length - successful;
+
+    return {
+      success: errors.length < processNumbers.length, // Sucesso se pelo menos um processo foi processado
+      results,
+      summary: {
+        total: processNumbers.length,
+        successful,
+        failed,
+        totalMovements,
+        tribunals: Array.from(tribunalsSet)
+      },
+      errors
+    };
+  }
+
+  /**
+   * Testa conectividade com API DataJud
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; responseTime: number }> {
+    const startTime = Date.now();
+    
     try {
-      const endpoint = this.getEndpointByTribunal(tribunalCode);
-      if (!endpoint) {
-        throw new Error(`Tribunal ${tribunalCode} não disponível na API DataJud`);
+      // Teste simples com endpoint TRF1
+      const response = await fetch(`${this.config.baseUrl}/api_publica_trf1/_search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `APIKey ${this.config.apiKey}`
+        },
+        body: JSON.stringify({
+          query: { match_all: {} },
+          size: 1
+        })
+      });
+
+      const responseTime = Date.now() - startTime;
+      
+      if (response.ok) {
+        return {
+          success: true,
+          message: 'Conexão com API DataJud estabelecida com sucesso',
+          responseTime
+        };
+      } else {
+        return {
+          success: false,
+          message: `Erro HTTP ${response.status}: ${response.statusText}`,
+          responseTime
+        };
       }
-
-      const query: any = {
-        size: options.size || 100,
-        query: options.filters || { match_all: {} },
-        sort: [
-          {
-            '@timestamp': {
-              order: 'asc'
-            }
-          }
-        ]
-      };
-
-      // Adicionar paginação se fornecida
-      if (options.searchAfter) {
-        query.search_after = options.searchAfter;
-      }
-
-      const response = await this.makeRequest(endpoint, query);
-
-      const processes = response.hits.hits.map(hit => hit._source);
-      const lastHit = response.hits.hits[response.hits.hits.length - 1];
-      const nextSearchAfter = lastHit?.sort;
-
-      return {
-        success: true,
-        processes,
-        searchAfter: nextSearchAfter,
-        total: response.hits.total.value
-      };
-
+      
     } catch (error) {
       return {
         success: false,
-        processes: [],
-        total: 0,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        responseTime: Date.now() - startTime
       };
     }
   }
-
-  /**
-   * Realizar requisição HTTP para API DataJud
-   */
-  private async makeRequest(endpoint: string, query: any): Promise<DatajudResponse> {
-    const url = `${this.config.baseUrl}/${endpoint}/_search`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `APIKey ${this.config.apiKey}`
-      },
-      body: JSON.stringify(query),
-      signal: AbortSignal.timeout(this.config.timeout)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(`Erro na API DataJud: ${JSON.stringify(data.error)}`);
-    }
-
-    return data;
-  }
-
-  /**
-   * Converter movimentações DataJud para formato interno
-   */
-  private parseMovements(processData: DatajudProcess, numeroProcesso: string): TribunalMovement[] {
-    if (!processData.movimentos || !Array.isArray(processData.movimentos)) {
-      return [];
-    }
-
-    return processData.movimentos.map((mov, index) => {
-      // Converter data/hora
-      const movementDate = new Date(mov.dataHora);
-      
-      // Gerar hash único para deduplicação
-      const hash = this.generateMovementHash({
-        processNumber: numeroProcesso,
-        date: movementDate,
-        code: mov.codigo,
-        name: mov.nome
-      });
-
-      // Determinar se é movimento judicial
-      const isJudicial = this.isJudicialMovement(mov.nome, mov.codigo);
-
-      return {
-        id: `datajud-${processData.tribunal}-${numeroProcesso}-${mov.codigo}-${index}`,
-        processNumber: numeroProcesso,
-        tribunal: processData.tribunal,
-        movementDate,
-        movementCode: mov.codigo.toString(),
-        title: mov.nome,
-        description: this.buildMovementDescription(mov),
-        isJudicial,
-        hash,
-        source: 'api-publica.datajud.cnj.jus.br',
-        discoveredAt: new Date(),
-        isNew: true,
-        metadata: {
-          orgaoJulgador: mov.orgaoJulgador,
-          complementos: mov.complementosTabelados,
-          codigoTPU: mov.codigo
-        }
-      } as TribunalMovement;
-    }).sort((a, b) => b.movementDate.getTime() - a.movementDate.getTime());
-  }
-
-  /**
-   * Construir descrição detalhada da movimentação
-   */
-  private buildMovementDescription(mov: DatajudMovement): string {
-    let description = mov.nome;
-
-    // Adicionar complementos tabelados se existirem
-    if (mov.complementosTabelados && mov.complementosTabelados.length > 0) {
-      const complementos = mov.complementosTabelados
-        .map(comp => `${comp.descricao}: ${comp.nome}`)
-        .join('; ');
-      description += `\nComplementos: ${complementos}`;
-    }
-
-    // Adicionar órgão julgador se diferente do principal
-    if (mov.orgaoJulgador && mov.orgaoJulgador.nomeOrgao) {
-      description += `\nÓrgão: ${mov.orgaoJulgador.nomeOrgao}`;
-    }
-
-    return description;
-  }
-
-  /**
-   * Determinar se é movimento judicial baseado no código TPU
-   */
-  private isJudicialMovement(nome: string, codigo: number): boolean {
-    // Códigos TPU conhecidos para movimentos judiciais
-    const judicialCodes = [
-      123, // Decisão
-      132, // Recebimento
-      193, // Intimação
-      246, // Juntada
-      60,  // Expedição
-      51,  // Audiência
-      85,  // Baixa
-      11,  // Distribuição
-      26   // Conclusão
-    ];
-
-    // Palavras-chave judiciais
-    const judicialKeywords = [
-      'decisão', 'sentença', 'despacho', 'acórdão', 'liminar',
-      'tutela', 'embargo', 'agravo', 'recurso', 'apelação',
-      'audiência', 'citação', 'intimação', 'conclusão'
-    ];
-
-    // Verificar por código
-    if (judicialCodes.includes(codigo)) {
-      return true;
-    }
-
-    // Verificar por palavras-chave
-    const lowerName = nome.toLowerCase();
-    return judicialKeywords.some(keyword => lowerName.includes(keyword));
-  }
-
-  /**
-   * Gerar hash MD5 para deduplicação
-   */
-  private generateMovementHash(data: {
-    processNumber: string;
-    date: Date;
-    code: number;
-    name: string;
-  }): string {
-    const crypto = require('crypto');
-    const hashInput = `${data.processNumber}-${data.date.toISOString()}-${data.code}-${data.name}`;
-    return crypto.createHash('md5').update(hashInput).digest('hex');
-  }
-
-  /**
-   * Mapear código tribunal CNJ para endpoint DataJud
-   */
-  private getEndpointByTribunal(tribunalCode: string): string | null {
-    const mapping: { [key: string]: string } = {
-      // Tribunais Superiores
-      'TST': 'api_publica_tst',
-      'TSE': 'api_publica_tse', 
-      'STJ': 'api_publica_stj',
-      'STM': 'api_publica_stm',
-
-      // Justiça Federal
-      'TRF1': 'api_publica_trf1',
-      'TRF2': 'api_publica_trf2',
-      'TRF3': 'api_publica_trf3',
-      'TRF4': 'api_publica_trf4',
-      'TRF5': 'api_publica_trf5',
-      'TRF6': 'api_publica_trf6',
-
-      // Justiça Estadual
-      'TJAC': 'api_publica_tjac',
-      'TJAL': 'api_publica_tjal',
-      'TJAM': 'api_publica_tjam',
-      'TJAP': 'api_publica_tjap',
-      'TJBA': 'api_publica_tjba',
-      'TJCE': 'api_publica_tjce',
-      'TJDFT': 'api_publica_tjdft',
-      'TJES': 'api_publica_tjes',
-      'TJGO': 'api_publica_tjgo',
-      'TJMA': 'api_publica_tjma',
-      'TJMG': 'api_publica_tjmg',
-      'TJMS': 'api_publica_tjms',
-      'TJMT': 'api_publica_tjmt',
-      'TJPA': 'api_publica_tjpa',
-      'TJPB': 'api_publica_tjpb',
-      'TJPE': 'api_publica_tjpe',
-      'TJPI': 'api_publica_tjpi',
-      'TJPR': 'api_publica_tjpr',
-      'TJRJ': 'api_publica_tjrj',
-      'TJRN': 'api_publica_tjrn',
-      'TJRO': 'api_publica_tjro',
-      'TJRR': 'api_publica_tjrr',
-      'TJRS': 'api_publica_tjrs',
-      'TJSC': 'api_publica_tjsc',
-      'TJSE': 'api_publica_tjse',
-      'TJSP': 'api_publica_tjsp',
-      'TJTO': 'api_publica_tjto'
-    };
-
-    return mapping[tribunalCode] || null;
-  }
-
-  /**
-   * Obter lista de todos os tribunais disponíveis
-   */
-  getTribunaisDisponiveis(): Array<{ code: string; name: string; endpoint: string }> {
-    return [
-      // Tribunais Superiores
-      { code: 'TST', name: 'Tribunal Superior do Trabalho', endpoint: 'api_publica_tst' },
-      { code: 'TSE', name: 'Tribunal Superior Eleitoral', endpoint: 'api_publica_tse' },
-      { code: 'STJ', name: 'Superior Tribunal de Justiça', endpoint: 'api_publica_stj' },
-      { code: 'STM', name: 'Superior Tribunal Militar', endpoint: 'api_publica_stm' },
-
-      // Justiça Federal
-      { code: 'TRF1', name: 'Tribunal Regional Federal da 1ª Região', endpoint: 'api_publica_trf1' },
-      { code: 'TRF2', name: 'Tribunal Regional Federal da 2ª Região', endpoint: 'api_publica_trf2' },
-      { code: 'TRF3', name: 'Tribunal Regional Federal da 3ª Região', endpoint: 'api_publica_trf3' },
-      { code: 'TRF4', name: 'Tribunal Regional Federal da 4ª Região', endpoint: 'api_publica_trf4' },
-      { code: 'TRF5', name: 'Tribunal Regional Federal da 5ª Região', endpoint: 'api_publica_trf5' },
-      { code: 'TRF6', name: 'Tribunal Regional Federal da 6ª Região', endpoint: 'api_publica_trf6' },
-
-      // Justiça Estadual (27 tribunais)
-      { code: 'TJAC', name: 'Tribunal de Justiça do Acre', endpoint: 'api_publica_tjac' },
-      { code: 'TJAL', name: 'Tribunal de Justiça de Alagoas', endpoint: 'api_publica_tjal' },
-      { code: 'TJAM', name: 'Tribunal de Justiça do Amazonas', endpoint: 'api_publica_tjam' },
-      { code: 'TJAP', name: 'Tribunal de Justiça do Amapá', endpoint: 'api_publica_tjap' },
-      { code: 'TJBA', name: 'Tribunal de Justiça da Bahia', endpoint: 'api_publica_tjba' },
-      { code: 'TJCE', name: 'Tribunal de Justiça do Ceará', endpoint: 'api_publica_tjce' },
-      { code: 'TJDFT', name: 'TJ do Distrito Federal e Territórios', endpoint: 'api_publica_tjdft' },
-      { code: 'TJES', name: 'Tribunal de Justiça do Espírito Santo', endpoint: 'api_publica_tjes' },
-      { code: 'TJGO', name: 'Tribunal de Justiça do Goiás', endpoint: 'api_publica_tjgo' },
-      { code: 'TJMA', name: 'Tribunal de Justiça do Maranhão', endpoint: 'api_publica_tjma' },
-      { code: 'TJMG', name: 'Tribunal de Justiça de Minas Gerais', endpoint: 'api_publica_tjmg' },
-      { code: 'TJMS', name: 'TJ do Mato Grosso do Sul', endpoint: 'api_publica_tjms' },
-      { code: 'TJMT', name: 'Tribunal de Justiça do Mato Grosso', endpoint: 'api_publica_tjmt' },
-      { code: 'TJPA', name: 'Tribunal de Justiça do Pará', endpoint: 'api_publica_tjpa' },
-      { code: 'TJPB', name: 'Tribunal de Justiça da Paraíba', endpoint: 'api_publica_tjpb' },
-      { code: 'TJPE', name: 'Tribunal de Justiça de Pernambuco', endpoint: 'api_publica_tjpe' },
-      { code: 'TJPI', name: 'Tribunal de Justiça do Piauí', endpoint: 'api_publica_tjpi' },
-      { code: 'TJPR', name: 'Tribunal de Justiça do Paraná', endpoint: 'api_publica_tjpr' },
-      { code: 'TJRJ', name: 'Tribunal de Justiça do Rio de Janeiro', endpoint: 'api_publica_tjrj' },
-      { code: 'TJRN', name: 'Tribunal de Justiça do Rio Grande do Norte', endpoint: 'api_publica_tjrn' },
-      { code: 'TJRO', name: 'Tribunal de Justiça de Rondônia', endpoint: 'api_publica_tjro' },
-      { code: 'TJRR', name: 'Tribunal de Justiça de Roraima', endpoint: 'api_publica_tjrr' },
-      { code: 'TJRS', name: 'Tribunal de Justiça do Rio Grande do Sul', endpoint: 'api_publica_tjrs' },
-      { code: 'TJSC', name: 'Tribunal de Justiça de Santa Catarina', endpoint: 'api_publica_tjsc' },
-      { code: 'TJSE', name: 'Tribunal de Justiça de Sergipe', endpoint: 'api_publica_tjse' },
-      { code: 'TJSP', name: 'Tribunal de Justiça de São Paulo', endpoint: 'api_publica_tjsp' },
-      { code: 'TJTO', name: 'Tribunal de Justiça do Tocantins', endpoint: 'api_publica_tjto' }
-    ];
-  }
 }
+
+export default DatajudClient;

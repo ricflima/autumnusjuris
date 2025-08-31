@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import TribunalMovementsService from '@/services/tribunalMovements.service';
+import TribunalApiService from '@/services/tribunalApi.service';
 
 interface TribunalStatsProps {
   autoRefresh?: boolean;
@@ -22,7 +22,7 @@ export const TribunalStats: React.FC<TribunalStatsProps> = ({
   const [error, setError] = useState('');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const service = TribunalMovementsService.getInstance();
+  const service = TribunalApiService.getInstance();
 
   const loadStatistics = async () => {
     setIsLoading(true);

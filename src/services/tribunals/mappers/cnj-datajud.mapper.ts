@@ -30,31 +30,22 @@ export class CNJDatajudMapper {
     // JUSTIÇA ESTADUAL (TJs) - Segmento Judiciário = 8
     { cnjCode: '801', datajudCode: 'TJAC', name: 'Tribunal de Justiça do Acre', type: 'estadual', region: 'AC' },
     { cnjCode: '802', datajudCode: 'TJAL', name: 'Tribunal de Justiça de Alagoas', type: 'estadual', region: 'AL' },
-    { cnjCode: '803', datajudCode: 'TJAP', name: 'Tribunal de Justiça do Amapá', type: 'estadual', region: 'AP' },
-    { cnjCode: '804', datajudCode: 'TJAM', name: 'Tribunal de Justiça do Amazonas', type: 'estadual', region: 'AM' },
-    { cnjCode: '805', datajudCode: 'TJBA', name: 'Tribunal de Justiça da Bahia', type: 'estadual', region: 'BA' },
-    { cnjCode: '806', datajudCode: 'TJCE', name: 'Tribunal de Justiça do Ceará', type: 'estadual', region: 'CE' },
-    { cnjCode: '807', datajudCode: 'TJDFT', name: 'TJ do Distrito Federal e Territórios', type: 'estadual', region: 'DF' },
-    { cnjCode: '808', datajudCode: 'TJES', name: 'Tribunal de Justiça do Espírito Santo', type: 'estadual', region: 'ES' },
-    { cnjCode: '809', datajudCode: 'TJGO', name: 'Tribunal de Justiça de Goiás', type: 'estadual', region: 'GO' },
-    { cnjCode: '810', datajudCode: 'TJMA', name: 'Tribunal de Justiça do Maranhão', type: 'estadual', region: 'MA' },
-    { cnjCode: '811', datajudCode: 'TJMT', name: 'Tribunal de Justiça de Mato Grosso', type: 'estadual', region: 'MT' },
-    { cnjCode: '812', datajudCode: 'TJMS', name: 'TJ do Mato Grosso do Sul', type: 'estadual', region: 'MS' },
+    { cnjCode: '803', datajudCode: 'TJCE', name: 'Tribunal de Justiça do Ceará', type: 'estadual', region: 'CE' },
+    { cnjCode: '807', datajudCode: 'TJSC', name: 'Tribunal de Justiça de Santa Catarina', type: 'estadual', region: 'SC' },
     { cnjCode: '813', datajudCode: 'TJMG', name: 'Tribunal de Justiça de Minas Gerais', type: 'estadual', region: 'MG' },
-    { cnjCode: '814', datajudCode: 'TJPA', name: 'Tribunal de Justiça do Pará', type: 'estadual', region: 'PA' },
-    { cnjCode: '815', datajudCode: 'TJPB', name: 'Tribunal de Justiça da Paraíba', type: 'estadual', region: 'PB' },
     { cnjCode: '816', datajudCode: 'TJPR', name: 'Tribunal de Justiça do Paraná', type: 'estadual', region: 'PR' },
-    { cnjCode: '817', datajudCode: 'TJPE', name: 'Tribunal de Justiça de Pernambuco', type: 'estadual', region: 'PE' },
-    { cnjCode: '818', datajudCode: 'TJPI', name: 'Tribunal de Justiça do Piauí', type: 'estadual', region: 'PI' },
     { cnjCode: '819', datajudCode: 'TJRJ', name: 'Tribunal de Justiça do Rio de Janeiro', type: 'estadual', region: 'RJ' },
-    { cnjCode: '820', datajudCode: 'TJRN', name: 'Tribunal de Justiça do Rio Grande do Norte', type: 'estadual', region: 'RN' },
     { cnjCode: '821', datajudCode: 'TJRS', name: 'Tribunal de Justiça do Rio Grande do Sul', type: 'estadual', region: 'RS' },
-    { cnjCode: '822', datajudCode: 'TJRO', name: 'Tribunal de Justiça de Rondônia', type: 'estadual', region: 'RO' },
-    { cnjCode: '823', datajudCode: 'TJRR', name: 'Tribunal de Justiça de Roraima', type: 'estadual', region: 'RR' },
-    { cnjCode: '824', datajudCode: 'TJSC', name: 'Tribunal de Justiça de Santa Catarina', type: 'estadual', region: 'SC' },
-    { cnjCode: '825', datajudCode: 'TJSE', name: 'Tribunal de Justiça de Sergipe', type: 'estadual', region: 'SE' },
-    { cnjCode: '826', datajudCode: 'TJSP', name: 'Tribunal de Justiça de São Paulo', type: 'estadual', region: 'SP' },
-    { cnjCode: '827', datajudCode: 'TJTO', name: 'Tribunal de Justiça do Tocantins', type: 'estadual', region: 'TO' }
+    { cnjCode: '825', datajudCode: 'TJSP', name: 'Tribunal de Justiça de São Paulo', type: 'estadual', region: 'SP' },
+    { cnjCode: '805', datajudCode: 'TJBA', name: 'Tribunal de Justiça da Bahia', type: 'estadual', region: 'BA' },
+    { cnjCode: '802', datajudCode: 'TJAL', name: 'Tribunal de Justiça de Alagoas', type: 'estadual', region: 'AL' },
+
+    // JUSTIÇA DO TRABALHO (TRTs) - Segmento Judiciário = 5  
+    { cnjCode: '501', datajudCode: 'TRT1', name: 'TRT da 1ª Região (Rio de Janeiro)', type: 'trabalhista', region: '1' },
+    { cnjCode: '502', datajudCode: 'TRT2', name: 'TRT da 2ª Região (São Paulo)', type: 'trabalhista', region: '2' },
+    { cnjCode: '503', datajudCode: 'TRT3', name: 'TRT da 3ª Região (Minas Gerais)', type: 'trabalhista', region: '3' },
+    { cnjCode: '504', datajudCode: 'TRT4', name: 'TRT da 4ª Região (Rio Grande do Sul)', type: 'trabalhista', region: '4' },
+    { cnjCode: '509', datajudCode: 'TRT9', name: 'TRT da 9ª Região (Paraná)', type: 'trabalhista', region: '9' }
   ];
 
   /**
