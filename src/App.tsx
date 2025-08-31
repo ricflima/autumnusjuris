@@ -73,6 +73,9 @@ import { NotificationsPlaceholder } from '@/pages/notifications/NotificationsPla
 import { WhatsAppBusiness } from '@/pages/integrations/WhatsAppBusiness';
 import { AdvancedReports } from '@/pages/reports/AdvancedReports';
 
+// Movement Consultation System - v1.1.0 Phase 0
+import MovementConsultation from '@/pages/MovementConsultation';
+
 // Error Pages
 import NotFound from '@/pages/errors/NotFound';
 import Unauthorized from '@/pages/errors/Unauthorized';
@@ -488,9 +491,21 @@ function App() {
         />
         
 
-        {/* Placeholder Routes for other Phase 9 features */}
+        {/* v1.1.0 Phase 0 - Movement Consultation System */}
         <Route
           path="/integrations/tribunals"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MovementConsultation />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Placeholder Routes for other Phase 9 features */}
+        <Route
+          path="/notifications"
           element={
             <ProtectedRoute>
               <Layout>

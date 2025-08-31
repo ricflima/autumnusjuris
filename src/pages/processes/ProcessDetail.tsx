@@ -37,6 +37,7 @@ import {
   DEADLINE_TYPE_LABELS
 } from '@/types/processes';
 import { formatDate, formatCurrency, formatDateTime } from '@/lib/utils';
+import { ProcessMovementConsult } from '@/components/tribunals/ProcessMovementConsult';
 
 export default function ProcessDetail() {
   const { id } = useParams<{ id: string }>();
@@ -757,12 +758,30 @@ export default function ProcessDetail() {
 
         {activeTab === 'movements' && (
           <div className="space-y-4">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Movimentações do Processo</h3>
-              <p className="text-gray-600">
-                Funcionalidade de consulta aos tribunais será reimplementada em breve.
+            <div>
+              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Movimentações Processuais
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Consulte as movimentações deste processo diretamente no tribunal identificado pelo CNJ.
               </p>
-            </Card>
+            </div>
+            
+            {/* Componente de consulta específica do processo */}
+            {process?.number ? (
+              <ProcessMovementConsult 
+                processNumber={process.number}
+                onMovementsFound={(movements) => {
+                  console.log('Movimentações encontradas:', movements);
+                }}
+              />
+            ) : (
+              <Card className="p-6 text-center text-gray-500">
+                <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>Número do processo não disponível</p>
+              </Card>
+            )}
           </div>
         )}
       </div>

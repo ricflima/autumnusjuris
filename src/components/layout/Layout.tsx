@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Gavel,
   PenTool,
-  Brain
+  Brain,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,8 @@ const navigation: NavigationItem[] = [
   { name: 'Casos', href: '/cases', icon: FileText },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Processos', href: '/processes', icon: Gavel },
+  // v1.1.0 Phase 0 - Sistema de Consulta de Movimentações
+  { name: 'Movimentações', href: '/integrations/tribunals', icon: Building2, badge: 'NOVO' },
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Calendário', href: '/calendar', icon: Calendar },
   { name: 'Financeiro', href: '/financial', icon: DollarSign },

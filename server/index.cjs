@@ -773,7 +773,7 @@ app.put('/api/documents/:id', async (req, res) => {
 app.get('/api/processes', async (req, res) => {
   try {
     const { 
-      caseId, status, court, 
+      caseId, status, court, userId, 
       page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'desc' 
     } = req.query;
 
@@ -797,6 +797,12 @@ app.get('/api/processes', async (req, res) => {
       paramCount++;
       whereConditions.push(`p.court ILIKE $${paramCount}`);
       queryParams.push(`%${court}%`);
+    }
+    
+    if (userId) {
+      paramCount++;
+      whereConditions.push(`c.lawyer_id = $${paramCount}`);
+      queryParams.push(userId);
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -842,7 +848,12 @@ app.get('/api/processes', async (req, res) => {
     const result = await pool.query(query, queryParams);
 
     // Contar total
-    const countQuery = `SELECT COUNT(*) as total FROM processes p ${whereClause}`;
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM processes p
+      LEFT JOIN cases c ON p.case_id = c.id
+      ${whereClause}
+    `;
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount - 2));
     const total = parseInt(countResult.rows[0].total);
 
@@ -1314,6 +1325,282 @@ app.get('/api', (req, res) => {
     storage: '/storage/ - Arquivos e documentos',
     timestamp: new Date().toISOString()
   });
+});
+
+// ===== SISTEMA DE TRIBUNAIS - v1.1.0 Phase 0 =====
+
+// Processo monitorados
+app.post('/api/tribunal/processes', async (req, res) => {
+  try {
+    const {
+      cnj_number,
+      clean_number,
+      tribunal_code,
+      tribunal_name,
+      status = 'active',
+      monitoring_frequency = 60,
+      basic_info,
+      created_by
+    } = req.body;
+
+    // Verificar se já existe
+    const existing = await pool.query(
+      'SELECT id FROM monitored_processes WHERE cnj_number = $1',
+      [cnj_number]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Processo já está sendo monitorado' });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO monitored_processes (
+        cnj_number, clean_number, tribunal_code, tribunal_name, 
+        status, monitoring_frequency, basic_info, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [cnj_number, clean_number, tribunal_code, tribunal_name, status, monitoring_frequency, JSON.stringify(basic_info), created_by]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao criar processo monitorado:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+app.get('/api/tribunal/processes/:cnj', async (req, res) => {
+  try {
+    const { cnj } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM monitored_processes WHERE cnj_number = $1',
+      [decodeURIComponent(cnj)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Processo não encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao buscar processo:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Movimentações
+app.post('/api/tribunal/movements/batch', async (req, res) => {
+  try {
+    const { movements } = req.body;
+    
+    let persisted = 0;
+    let newMovements = 0;
+    let duplicates = 0;
+
+    for (const movement of movements) {
+      try {
+        await pool.query(`
+          INSERT INTO tribunal_movements (
+            process_id, movement_id, movement_date, movement_datetime,
+            title, description, movement_type, is_public, author,
+            destination, attachments, raw_content, content_hash,
+            tribunal_source, is_new
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        `, [
+          movement.process_id,
+          movement.movement_id,
+          movement.movement_date,
+          movement.movement_datetime,
+          movement.title,
+          movement.description,
+          movement.movement_type,
+          movement.is_public,
+          movement.author,
+          movement.destination,
+          movement.attachments,
+          movement.raw_content,
+          movement.content_hash,
+          movement.tribunal_source,
+          movement.is_new
+        ]);
+        
+        persisted++;
+        if (movement.is_new) newMovements++;
+        
+      } catch (err) {
+        if (err.code === '23505') { // Unique violation
+          duplicates++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    res.json({ persisted, newMovements, duplicates });
+  } catch (error) {
+    console.error('Erro ao persistir movimentações:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Novidades
+app.post('/api/tribunal/novelties', async (req, res) => {
+  try {
+    const noveltyData = req.body;
+    
+    // Simular criação de novidade (em produção seria salvo no banco)
+    const novelty = {
+      id: 'nov_' + Date.now(),
+      ...noveltyData,
+      created_at: new Date().toISOString()
+    };
+
+    res.status(201).json(novelty);
+  } catch (error) {
+    console.error('Erro ao criar novidade:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+app.get('/api/tribunal/novelties', async (req, res) => {
+  try {
+    // Simulando novidades para demonstração
+    const mockNovelties = [
+      {
+        id: 'nov_001',
+        processId: 'proc_001',
+        movementId: 'mov_001',
+        cnjNumber: '1234567-89.2023.8.26.0001',
+        tribunalName: 'Tribunal de Justiça de São Paulo',
+        title: 'Despacho do Juiz - Determina citação',
+        description: 'Despacho determinando a citação da parte requerida no prazo de 15 dias.',
+        movementDate: new Date().toISOString(),
+        movementType: 'despacho',
+        isRead: false,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 horas atrás
+        expiresAt: new Date(Date.now() + 46 * 60 * 60 * 1000).toISOString(), // 46 horas no futuro
+        remainingHours: 46,
+        tags: ['tipo:despacho', 'palavra-chave:citação'],
+        priority: 'high'
+      },
+      {
+        id: 'nov_002',
+        processId: 'proc_002',
+        movementId: 'mov_002',
+        cnjNumber: '9876543-21.2023.5.02.0001',
+        tribunalName: 'Tribunal Regional do Trabalho da 2ª Região',
+        title: 'Juntada de Petição',
+        description: 'Juntada de petição inicial protocolada pelo autor.',
+        movementDate: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hora atrás
+        movementType: 'peticao',
+        isRead: false,
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(), // 47 horas no futuro
+        remainingHours: 47,
+        tags: ['tipo:peticao', 'com-anexos'],
+        priority: 'medium'
+      }
+    ];
+
+    const stats = {
+      total: mockNovelties.length,
+      unread: mockNovelties.filter(n => !n.isRead).length,
+      byPriority: {
+        urgent: 0,
+        high: mockNovelties.filter(n => n.priority === 'high').length,
+        medium: mockNovelties.filter(n => n.priority === 'medium').length,
+        low: 0
+      },
+      expiring24h: mockNovelties.filter(n => n.remainingHours <= 24).length,
+      expired: 0
+    };
+
+    res.json({
+      novelties: mockNovelties,
+      total: mockNovelties.length,
+      stats
+    });
+  } catch (error) {
+    console.error('Erro ao buscar novidades:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Cache
+app.put('/api/tribunal/cache', async (req, res) => {
+  try {
+    // Simular cache (em produção seria salvo no banco)
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao atualizar cache:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+app.get('/api/tribunal/cache/:key', async (req, res) => {
+  try {
+    // Simular busca no cache (sempre retorna não encontrado para teste)
+    res.status(404).json({ error: 'Cache não encontrado' });
+  } catch (error) {
+    console.error('Erro ao buscar cache:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Logs
+app.post('/api/tribunal/logs', async (req, res) => {
+  try {
+    // Simular log (em produção seria salvo no banco)
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao registrar log:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Estatísticas
+app.get('/api/tribunal/statistics', async (req, res) => {
+  try {
+    // Simular estatísticas para demonstração
+    const mockStats = [
+      {
+        tribunalCode: '825',
+        tribunalName: 'Tribunal de Justiça de São Paulo',
+        totalProcesses: 15,
+        totalMovements: 45,
+        newMovements: 3,
+        lastQuery: new Date().toISOString(),
+        avgResponseTime: 1500
+      },
+      {
+        tribunalCode: '819',
+        tribunalName: 'Tribunal de Justiça do Rio de Janeiro',
+        totalProcesses: 8,
+        totalMovements: 22,
+        newMovements: 1,
+        lastQuery: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min atrás
+        avgResponseTime: 1200
+      }
+    ];
+
+    res.json(mockStats);
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Limpeza
+app.post('/api/tribunal/cleanup', async (req, res) => {
+  try {
+    // Simular limpeza
+    res.json({
+      expiredCache: 0,
+      expiredMovements: 0
+    });
+  } catch (error) {
+    console.error('Erro na limpeza:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 // ===== HEALTH CHECK =====
