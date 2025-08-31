@@ -1,6 +1,6 @@
 // src/services/tribunals/cache/tribunalCache.service.ts
 
-import { ProcessQueryResult } from '../scrapers/baseScraper';
+import { MovementQueryResult } from '../../tribunalMovements.service';
 import TribunalDatabaseService from '../database/tribunalDatabase.service';
 
 /**
@@ -19,7 +19,7 @@ export interface CacheConfig {
  */
 interface CacheItem {
   key: string;
-  data: ProcessQueryResult;
+  data: MovementQueryResult;
   createdAt: number;
   expiresAt: number;
   accessCount: number;
@@ -51,6 +51,10 @@ export interface CacheStats {
     deletes: number;
     cleanups: number;
   };
+  // Propriedades adicionais para compatibilidade
+  hitRate?: number;
+  totalQueries?: number;
+  successRate?: number;
 }
 
 /**
@@ -110,11 +114,18 @@ export class TribunalCacheService {
     }
     return TribunalCacheService.instance;
   }
+
+  /**
+   * Inicializar o serviço de cache
+   */
+  async initialize(): Promise<void> {
+    console.log('[TribunalCache] Serviço de cache inicializado');
+  }
   
   /**
    * Busca resultado no cache (memória primeiro, depois persistente)
    */
-  async get(cnjNumber: string, tribunalCode: string): Promise<ProcessQueryResult | null> {
+  async get(cnjNumber: string, tribunalCode: string, cacheTimeMinutes?: number): Promise<any | null> {
     this.stats.operations.gets++;
     
     const cacheKey = this.generateCacheKey(cnjNumber, tribunalCode);
@@ -165,7 +176,7 @@ export class TribunalCacheService {
   async set(
     cnjNumber: string,
     tribunalCode: string,
-    result: ProcessQueryResult,
+    result: any,
     ttlMinutes?: number
   ): Promise<void> {
     this.stats.operations.sets++;
@@ -365,7 +376,7 @@ export class TribunalCacheService {
   /**
    * Busca no cache de memória
    */
-  private getFromMemory(key: string): ProcessQueryResult | null {
+  private getFromMemory(key: string): MovementQueryResult | null {
     const item = this.memoryCache.get(key);
     if (!item) return null;
     
@@ -387,7 +398,7 @@ export class TribunalCacheService {
   /**
    * Armazena no cache de memória
    */
-  private setInMemory(key: string, data: ProcessQueryResult, ttlMinutes: number): void {
+  private setInMemory(key: string, data: MovementQueryResult, ttlMinutes: number): void {
     const now = Date.now();
     const size = this.estimateSize(data);
     

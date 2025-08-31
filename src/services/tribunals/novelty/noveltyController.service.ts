@@ -2,7 +2,7 @@
 
 import TribunalDatabaseService from '../database/tribunalDatabase.service';
 import HashGeneratorService from '../utils/hashGenerator.service';
-import { ProcessMovement } from '../scrapers/baseScraper';
+import { TribunalMovement } from '../../../types/tribunal.types';
 
 /**
  * Interface para uma novidade
@@ -125,13 +125,58 @@ export class NoveltyControllerService {
     }
     return NoveltyControllerService.instance;
   }
+
+  /**
+   * Inicializar o serviço
+   */
+  async initialize(): Promise<void> {
+    console.log('[NoveltyController] Serviço de novidades inicializado');
+  }
+
+  /**
+   * Detectar novidades em movimentações
+   */
+  async detectNovelties(
+    processNumber: string,
+    tribunal: string,
+    movements: TribunalMovement[]
+  ): Promise<Novelty[]> {
+    // Implementação básica para detectar novidades
+    const novelties: Novelty[] = [];
+    
+    movements.forEach((movement, index) => {
+      if (movement.isNew) {
+        const expiresAt = new Date(Date.now() + this.config.ttlHours * 60 * 60 * 1000);
+        
+        novelties.push({
+          id: `novelty-${movement.id}`,
+          processId: processNumber,
+          movementId: movement.id,
+          cnjNumber: processNumber,
+          tribunalName: tribunal,
+          title: movement.title,
+          description: movement.description,
+          movementDate: movement.movementDate.toISOString(),
+          movementType: movement.isJudicial ? 'judicial' : 'administrative',
+          isRead: false,
+          createdAt: movement.discoveredAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          remainingHours: this.config.ttlHours,
+          tags: [movement.isJudicial ? 'judicial' : 'administrative'],
+          priority: movement.isJudicial ? 'high' : 'medium'
+        });
+      }
+    });
+
+    return novelties;
+  }
   
   /**
    * Processa movimentações e identifica novidades
    */
   async processMovements(
     processId: string,
-    movements: ProcessMovement[],
+    movements: TribunalMovement[],
     cnjNumber: string,
     tribunalName: string
   ): Promise<{
@@ -179,7 +224,7 @@ export class NoveltyControllerService {
    */
   private async createNovelty(
     processId: string,
-    movement: ProcessMovement,
+    movement: TribunalMovement,
     cnjNumber: string,
     tribunalName: string
   ): Promise<Novelty | null> {
@@ -197,8 +242,8 @@ export class NoveltyControllerService {
         tribunal_name: tribunalName,
         title: movement.title,
         description: movement.description,
-        movement_date: movement.date,
-        movement_type: movement.type || 'outros',
+        movement_date: movement.movementDate,
+        movement_type: movement.isJudicial ? 'judicial' : 'administrative',
         is_read: false,
         expires_at: expiresAt.toISOString(),
         priority,
@@ -400,10 +445,11 @@ export class NoveltyControllerService {
   /**
    * Calcula prioridade baseada no conteúdo da movimentação
    */
-  private calculatePriority(movement: ProcessMovement): 'low' | 'medium' | 'high' | 'urgent' {
+  private calculatePriority(movement: TribunalMovement): 'low' | 'medium' | 'high' | 'urgent' {
     // Verificar tipo da movimentação
-    if (movement.type && this.config.priorityRules.movementTypes[movement.type]) {
-      return this.config.priorityRules.movementTypes[movement.type];
+    const movementType = movement.isJudicial ? 'judicial' : 'administrative';
+    if (this.config.priorityRules.movementTypes[movementType]) {
+      return this.config.priorityRules.movementTypes[movementType];
     }
     
     // Verificar palavras-chave no título e descrição
@@ -415,10 +461,8 @@ export class NoveltyControllerService {
       }
     }
     
-    // Prioridade padrão baseada na presença de anexos
-    if (movement.attachments && movement.attachments.length > 0) {
-      return 'medium';
-    }
+    // Prioridade padrão (sem anexos no novo sistema)
+    // return 'medium' se houvesse anexos
     
     return 'low';
   }
@@ -426,13 +470,12 @@ export class NoveltyControllerService {
   /**
    * Gera tags baseadas no conteúdo da movimentação
    */
-  private generateTags(movement: ProcessMovement): string[] {
+  private generateTags(movement: TribunalMovement): string[] {
     const tags: string[] = [];
     
     // Tag do tipo
-    if (movement.type) {
-      tags.push(`tipo:${movement.type}`);
-    }
+    const movementType = movement.isJudicial ? 'judicial' : 'administrative';
+    tags.push(`tipo:${movementType}`);
     
     // Tags baseadas em palavras-chave
     const content = `${movement.title} ${movement.description || ''}`.toLowerCase();
@@ -445,15 +488,8 @@ export class NoveltyControllerService {
     }
     
     // Tag de anexos
-    if (movement.attachments && movement.attachments.length > 0) {
-      tags.push('com-anexos');
-      tags.push(`anexos:${movement.attachments.length}`);
-    }
-    
-    // Tag do autor se disponível
-    if (movement.author) {
-      tags.push(`autor:${movement.author.toLowerCase().replace(/\s+/g, '-')}`);
-    }
+    // Tags de anexos e autor não disponíveis no sistema DataJud
+    // Removido código relacionado a anexos e autor
     
     return tags;
   }

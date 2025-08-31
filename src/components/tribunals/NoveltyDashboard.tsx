@@ -33,7 +33,7 @@ export const NoveltyDashboard: React.FC<NoveltyDashboardProps> = ({
       await service.initialize();
       
       // Buscar novidades não lidas
-      const unreadNovelties = await service.getUnreadNovelties(50);
+      const unreadNovelties = await service.getUnreadNovelties();
       setNovelties(unreadNovelties);
 
       // Buscar estatísticas

@@ -55,7 +55,7 @@ export const useMovements = (
     try {
       await service.initialize();
       
-      const novelties = await service.getUnreadNovelties(100);
+      const novelties = await service.getUnreadNovelties();
       
       // Aplicar filtros locais
       let filteredNovelties = novelties;

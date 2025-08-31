@@ -1,5 +1,5 @@
 // src/services/tribunals/index.ts
-// Exportações da Fase 0 - Fundação e Arquitetura
+// Exportações do Sistema de Tribunais - DataJud API
 
 // Parser CNJ
 export { CNJParser } from './parsers/cnj.parser';
@@ -8,29 +8,11 @@ export type {
   CNJValidationResult 
 } from './parsers/cnj.parser';
 
-// Identificador de Tribunais
-export { 
-  default as TribunalIdentifierService,
-  TribunalIdentifierService as TribunalIdentifier 
-} from './tribunalIdentifier.service';
-export type {
-  TribunalConfig,
-  TribunalIdentificationResult
-} from './tribunalIdentifier.service';
-
-// Scraper Base
-export { 
-  default as BaseScraper 
-} from './scrapers/baseScraper';
-export type {
-  ProcessQueryStatus,
-  ProcessBasicInfo,
-  ProcessMovement,
-  ProcessQueryResult,
-  RequestConfig,
-  ScraperConfig,
-  ScraperMetrics
-} from './scrapers/baseScraper';
+// DataJud API Client e Parser
+export { DatajudClient } from './clients/datajud.client';
+export { CNJDatajudMapper } from './mappers/cnj-datajud.mapper';
+export { DatajudParser } from './parsers/datajud.parser';
+export { DatajudPaginatorService } from './core/datajud-paginator.service';
 
 // Database Service
 export { 

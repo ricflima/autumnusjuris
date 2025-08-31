@@ -1,8 +1,7 @@
 // src/services/tribunals/database/tribunalDatabase.service.ts
 
-import { ProcessQueryResult, ProcessMovement, ProcessBasicInfo } from '../scrapers/baseScraper';
+import { TribunalMovement, ScrapingResult } from '../../../types/tribunal.types';
 import { CNJProcessNumber } from '../parsers/cnj.parser';
-import { TribunalConfig } from '../tribunalIdentifier.service';
 
 /**
  * Interface para processo monitorado
@@ -19,7 +18,7 @@ export interface MonitoredProcess {
   lastMovementAt?: string;
   totalMovements: number;
   contentHash?: string;
-  basicInfo?: ProcessBasicInfo;
+  basicInfo?: any; // Informações básicas do processo
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -72,7 +71,7 @@ export interface QueryCache {
   cacheKey: string;
   cnjNumber: string;
   tribunalCode: string;
-  queryResult: ProcessQueryResult;
+  queryResult: any; // Resultado da consulta
   contentHash: string;
   queryStatus: string;
   expiresAt: string;
@@ -84,9 +83,33 @@ export interface QueryCache {
 /**
  * Service para gerenciar persistência das consultas de tribunal
  */
-export class TribunalDatabaseService {
-  
+export default class TribunalDatabaseService {
+  private static instance: TribunalDatabaseService;
   private static apiUrl = 'http://172.25.132.0:3001/api';
+  
+  private constructor() {}
+  
+  static getInstance(): TribunalDatabaseService {
+    if (!TribunalDatabaseService.instance) {
+      TribunalDatabaseService.instance = new TribunalDatabaseService();
+    }
+    return TribunalDatabaseService.instance;
+  }
+  
+  async initialize(): Promise<void> {
+    // Inicialização se necessária
+    console.log('[TribunalDatabase] Serviço inicializado');
+  }
+  
+  async saveMovements(
+    processNumber: string, 
+    tribunal: string, 
+    movements: any[], 
+    novelties: any[]
+  ): Promise<void> {
+    // Implementar salvamento das movimentações
+    console.log(`[TribunalDatabase] Salvando ${movements.length} movimentações`);
+  }
   
   /**
    * Adiciona um processo para monitoramento
@@ -182,7 +205,7 @@ export class TribunalDatabaseService {
    */
   static async persistMovements(
     processId: string,
-    movements: ProcessMovement[],
+    movements: TribunalMovement[],
     tribunalCode: string
   ): Promise<{
     persisted: number;
@@ -192,15 +215,15 @@ export class TribunalDatabaseService {
     const movementsData = movements.map(movement => ({
       process_id: processId,
       movement_id: movement.id,
-      movement_date: movement.date.split('T')[0], // Data sem hora
-      movement_datetime: movement.date,
+      movement_date: movement.movementDate.toISOString().split('T')[0], // Data sem hora
+      movement_datetime: movement.movementDate.toISOString(),
       title: movement.title,
       description: movement.description,
-      movement_type: movement.type || 'outros',
-      is_public: movement.isPublic,
-      author: movement.author,
-      destination: movement.destination,
-      attachments: movement.attachments ? JSON.stringify(movement.attachments) : null,
+      movement_type: movement.isJudicial ? 'judicial' : 'administrative',
+      is_public: true,
+      author: null,
+      destination: null,
+      attachments: JSON.stringify([]),
       raw_content: `${movement.title}\n${movement.description || ''}`,
       content_hash: this.generateContentHash(movement),
       tribunal_source: tribunalCode,
@@ -277,7 +300,7 @@ export class TribunalDatabaseService {
   static async updateCache(
     cnjNumber: string,
     tribunalCode: string,
-    queryResult: ProcessQueryResult,
+    queryResult: any, // Resultado da consulta
     ttlMinutes: number = 60
   ): Promise<void> {
     const cacheKey = this.generateCacheKey(cnjNumber, tribunalCode);
@@ -415,7 +438,7 @@ export class TribunalDatabaseService {
    */
   static async updateProcessBasicInfo(
     processId: string,
-    basicInfo: ProcessBasicInfo,
+    basicInfo: any, // Informações básicas do processo
     contentHash: string
   ): Promise<void> {
     const updateData = {
@@ -441,15 +464,15 @@ export class TribunalDatabaseService {
   /**
    * Gera hash do conteúdo da movimentação para detecção de duplicatas
    */
-  private static generateContentHash(movement: ProcessMovement): string {
-    const content = `${movement.date}|${movement.title}|${movement.description || ''}|${movement.author || ''}`;
+  private static generateContentHash(movement: TribunalMovement): string {
+    const content = `${movement.movementDate.toISOString()}|${movement.title}|${movement.description || ''}`;
     return this.simpleHash(content);
   }
   
   /**
    * Gera hash do resultado da consulta
    */
-  private static generateQueryHash(queryResult: ProcessQueryResult): string {
+  private static generateQueryHash(queryResult: any): string {
     const content = JSON.stringify({
       status: queryResult.status,
       basicInfo: queryResult.basicInfo,
@@ -492,4 +515,4 @@ export class TribunalDatabaseService {
   }
 }
 
-export default TribunalDatabaseService;
+// export default TribunalDatabaseService; // Removido - já está no topo da classe
