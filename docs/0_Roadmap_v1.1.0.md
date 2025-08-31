@@ -3,7 +3,7 @@
 ## 🎯 Visão Geral
 Nova versão focada exclusivamente na implementação de um **sistema completo e robusto de consulta a movimentações processuais em todos os tribunais brasileiros**. Esta versão transformará o AutumnusJuris na ferramenta mais avançada de acompanhamento processual do mercado jurídico nacional.
 Documento de referencia: /docs/guia_datajud.md
----
+----
 
 ## 🏛️ OBJETIVO PRINCIPAL
 
