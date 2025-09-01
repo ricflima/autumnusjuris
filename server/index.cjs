@@ -1002,7 +1002,31 @@ function formatProcessNumber(numero) {
 app.post('/api/processes', async (req, res) => {
   try {
     const {
+      // Campos modernos
       number,
+      internalNumber,
+      title,
+      description,
+      type,
+      phase = 'initial',
+      priority = 'medium',
+      responsibleLawyerId,
+      court,
+      district,
+      city,
+      state,
+      country = 'Brasil',
+      opposingParty,
+      opposingLawyer,
+      processValueAmount,
+      processValueDescription,
+      filingDate,
+      citationDate,
+      notes,
+      tags = [],
+      isConfidential = false,
+      status = 'active',
+      // Campos legacy para compatibilidade
       caseId,
       plaintiff,
       defendant,
@@ -1014,15 +1038,9 @@ app.post('/api/processes', async (req, res) => {
       distributionDate,
       judge,
       courtClerk,
-      court,
-      district,
-      city,
-      state,
-      status = 'active',
       claimValue = 0,
       sentenceValue = 0,
-      observations,
-      tags = []
+      observations
     } = req.body;
 
     // Formatar o número automaticamente
@@ -1054,29 +1072,66 @@ app.post('/api/processes', async (req, res) => {
     // Inserir processo
     const result = await pool.query(`
       INSERT INTO processes (
-        number, case_id, plaintiff, defendant, other_parties,
-        lawyer_plaintiff, lawyer_defendant, subject, class,
-        distribution_date, judge, court_clerk, court, judicial_district,
-        city, state, status, claim_value, sentence_value,
-        observations, tags, created_at, updated_at
+        number, case_id, internal_number, title, description,
+        process_type, process_phase, process_priority, responsible_lawyer_id,
+        court, judicial_district, city, state, country,
+        opposing_party, opposing_lawyer, process_value_amount, process_value_description,
+        filing_date, citation_date, notes, tags, is_confidential, status,
+        plaintiff, defendant, other_parties, lawyer_plaintiff, lawyer_defendant,
+        subject, class, distribution_date, judge, court_clerk,
+        claim_value, sentence_value, observations,
+        created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, NOW(), NOW()
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33, $34, $35, $36, NOW(), NOW()
       ) RETURNING *
     `, [
       formattedNumber, 
-      caseId && caseId !== '' ? caseId : null, // Tratar string vazia como null
+      caseId && caseId !== '' ? caseId : null,
+      internalNumber, title || subject, description,
+      type || 'civil', phase, priority, responsibleLawyerId || lawyerPlaintiff,
+      court, district, city, state, country,
+      opposingParty || defendant, opposingLawyer || lawyerDefendant, 
+      processValueAmount || claimValue, processValueDescription,
+      filingDate || distributionDate, citationDate, notes || observations, 
+      tags || [], isConfidential, status,
+      // Campos legacy para compatibilidade
       plaintiff, defendant, JSON.stringify(otherParties || []),
       lawyerPlaintiff, lawyerDefendant, subject, processClass,
-      distributionDate, judge, courtClerk, court, district,
-      city, state, status, claimValue, sentenceValue,
-      observations, tags || []
+      distributionDate, judge, courtClerk,
+      claimValue, sentenceValue, observations
     ]);
 
     const createdProcess = {
       id: result.rows[0].id,
       number: result.rows[0].number,
+      internalNumber: result.rows[0].internal_number,
+      title: result.rows[0].title,
+      description: result.rows[0].description,
+      type: result.rows[0].process_type,
+      phase: result.rows[0].process_phase,
+      priority: result.rows[0].process_priority,
+      responsibleLawyerId: result.rows[0].responsible_lawyer_id,
+      court: result.rows[0].court,
+      district: result.rows[0].judicial_district,
+      city: result.rows[0].city,
+      state: result.rows[0].state,
+      country: result.rows[0].country,
+      opposingParty: result.rows[0].opposing_party,
+      opposingLawyer: result.rows[0].opposing_lawyer,
+      processValue: {
+        amount: parseFloat(result.rows[0].process_value_amount || '0'),
+        description: result.rows[0].process_value_description
+      },
+      filingDate: result.rows[0].filing_date,
+      citationDate: result.rows[0].citation_date,
+      notes: result.rows[0].notes,
+      tags: result.rows[0].tags || [],
+      isConfidential: result.rows[0].is_confidential,
+      status: result.rows[0].status,
+      // Campos legacy para compatibilidade
       caseId: result.rows[0].case_id,
       plaintiff: result.rows[0].plaintiff,
       defendant: result.rows[0].defendant,
@@ -1088,15 +1143,9 @@ app.post('/api/processes', async (req, res) => {
       distributionDate: result.rows[0].distribution_date,
       judge: result.rows[0].judge,
       courtClerk: result.rows[0].court_clerk,
-      court: result.rows[0].court,
-      district: result.rows[0].judicial_district,
-      city: result.rows[0].city,
-      state: result.rows[0].state,
-      status: result.rows[0].status,
       claimValue: parseFloat(result.rows[0].claim_value || '0'),
       sentenceValue: parseFloat(result.rows[0].sentence_value || '0'),
       observations: result.rows[0].observations,
-      tags: result.rows[0].tags || [],
       movements: [],
       createdAt: result.rows[0].created_at,
       updatedAt: result.rows[0].updated_at
@@ -1145,19 +1194,38 @@ app.put('/api/processes/:id', async (req, res) => {
 
     const fieldMap = {
       number: 'number',
+      internalNumber: 'internal_number',
+      title: 'title',
+      description: 'description',
+      type: 'process_type',
+      phase: 'process_phase',
+      priority: 'process_priority',
+      responsibleLawyerId: 'responsible_lawyer_id',
+      court: 'court',
+      district: 'judicial_district',
+      city: 'city',
+      state: 'state',
+      country: 'country',
+      opposingParty: 'opposing_party',
+      opposingLawyer: 'opposing_lawyer',
+      processValueAmount: 'process_value_amount',
+      processValueDescription: 'process_value_description',
+      filingDate: 'filing_date',
+      citationDate: 'citation_date',
+      notes: 'notes',
+      tags: 'tags',
+      isConfidential: 'is_confidential',
+      status: 'status',
+      // Campos legacy para compatibilidade
       plaintiff: 'plaintiff',
       defendant: 'defendant',
       subject: 'subject',
       class: 'class',
       distributionDate: 'distribution_date',
       judge: 'judge',
-      court: 'court',
-      district: 'judicial_district',
-      city: 'city',
-      state: 'state',
-      status: 'status',
       claimValue: 'claim_value',
-      observations: 'observations'
+      observations: 'observations',
+      lawyerPlaintiff: 'lawyer_plaintiff'
     };
 
     for (const [frontendField, dbField] of Object.entries(fieldMap)) {

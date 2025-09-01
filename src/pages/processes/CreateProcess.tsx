@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ProcessNumberInput } from '@/components/ui/process-number-input';
+import { ProcessNumberInput, applyProcessNumberMask } from '@/components/ui/process-number-input';
 import { processesService } from '@/services/processes.service';
 import { casesService } from '@/services/cases.service';
 import { clientsService } from '@/services/clients.service';
@@ -25,45 +25,8 @@ import {
   PROCESS_TYPE_LABELS,
   PRIORITY_LABELS
 } from '@/types/processes';
+import { createProcessSchema, CreateProcessFormData } from '@/schemas/processes.schema';
 
-// Schema de validação
-const createProcessSchema = z.object({
-  number: z.string().min(1, 'Número do processo é obrigatório'),
-  internalNumber: z.string().optional(),
-  title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
-  type: z.enum(['civil', 'criminal', 'labor', 'tax', 'family', 'administrative']),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  caseId: z.string().optional(),
-  clientIds: z.array(z.string()).min(1, 'Selecione pelo menos um cliente'),
-  responsibleLawyerId: z.string().min(1, 'Advogado responsável é obrigatório'),
-  
-  // Informações do tribunal
-  court: z.string().min(1, 'Nome do tribunal é obrigatório'),
-  district: z.string().min(1, 'Comarca/Foro é obrigatório'),
-  city: z.string().min(1, 'Cidade é obrigatória'),
-  state: z.string().min(2, 'Estado é obrigatório').max(2, 'Use a sigla do estado'),
-  country: z.string().default('Brasil'),
-  
-  // Partes processuais
-  opposingParty: z.string().optional(),
-  opposingLawyer: z.string().optional(),
-  
-  // Valores
-  processValue: z.string().optional(),
-  processValueDescription: z.string().optional(),
-  
-  // Datas
-  filingDate: z.string().min(1, 'Data de distribuição é obrigatória'),
-  citationDate: z.string().optional(),
-  
-  // Observações
-  notes: z.string().optional(),
-  tags: z.string().optional(),
-  isConfidential: z.boolean().default(false),
-});
-
-type CreateProcessFormData = z.infer<typeof createProcessSchema>;
 
 const BRAZILIAN_STATES = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
@@ -290,7 +253,11 @@ export default function CreateProcess() {
                 <ProcessNumberInput
                   id="number"
                   value={watch('number')}
-                  onChange={(value) => setValue('number', value, { shouldValidate: true })}
+                  onChange={(value) => {
+                    // Aplicar formatação CNJ se o valor tem 20 dígitos
+                    const formattedValue = value.length === 20 ? applyProcessNumberMask(value) : value;
+                    setValue('number', formattedValue, { shouldValidate: true });
+                  }}
                   placeholder="0000000-00.0000.0.00.0000"
                   error={errors.number?.message}
                 />
@@ -480,6 +447,16 @@ export default function CreateProcess() {
                 {errors.state && (
                   <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
                 )}
+              </div>
+              
+              <div>
+                <Label htmlFor="country">País *</Label>
+                <Input
+                  id="country"
+                  {...register('country')}
+                  defaultValue="Brasil"
+                  error={errors.country?.message}
+                />
               </div>
             </div>
           </Card>

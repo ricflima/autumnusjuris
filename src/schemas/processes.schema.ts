@@ -16,8 +16,8 @@ export const createProcessSchema = z.object({
   clientIds: z.array(z.string()).min(1, 'Pelo menos um cliente deve ser selecionado'),
   responsibleLawyerId: z.string().min(1, 'Advogado responsável é obrigatório'),
   court: z.string().min(1, 'Tribunal/Foro é obrigatório'),
-  district: z.string().optional(),
-  city: z.string().optional(),
+  district: z.string().min(1, 'Comarca/Foro é obrigatório'),
+  city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().min(1, 'Estado é obrigatório'),
   country: z.string().min(1, 'País é obrigatório'),
   opposingParty: z.string().optional(),
@@ -42,7 +42,7 @@ export const updateProcessSchema = z.object({
   status: z.enum(['active', 'suspended', 'archived', 'concluded', 'appealed'], {
     errorMap: () => ({ message: 'Status inválido' })
   }),
-  phase: z.enum(["initial", "instruction", "judgment", "appeal", "execution"], {
+  phase: z.enum(['initial', 'instruction', 'judgment', 'appeal', 'execution'], {
     errorMap: () => ({ message: 'Fase inválida' })
   }),
   priority: z.enum(['low', 'medium', 'high', 'urgent'], {
@@ -52,15 +52,15 @@ export const updateProcessSchema = z.object({
   clientIds: z.array(z.string()).min(1, 'Pelo menos um cliente deve ser selecionado'),
   responsibleLawyerId: z.string().min(1, 'Advogado responsável é obrigatório'),
   court: z.string().min(1, 'Tribunal/Foro é obrigatório'),
-  district: z.string().optional(),
-  city: z.string().optional(),
+  district: z.string().min(1, 'Comarca/Foro é obrigatório'),
+  city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().min(1, 'Estado é obrigatório'),
   country: z.string().min(1, 'País é obrigatório'),
   opposingParty: z.string().optional(),
   opposingLawyer: z.string().optional(),
   processValue: z.string().optional(),
   processValueDescription: z.string().optional(),
-  filingDate: z.string().optional(),
+  filingDate: z.string().min(1, 'Data de ajuizamento é obrigatória'),
   citationDate: z.string().optional(),
   notes: z.string().optional(),
   tags: z.string().optional(),

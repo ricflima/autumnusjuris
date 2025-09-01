@@ -406,21 +406,40 @@ class ProcessesService {
   async createProcess(data: CreateProcessRequest): Promise<Process> {
     try {
       const response = await axios.post(`${API_BASE_URL}/processes`, {
+        // Campos modernos
         number: data.number,
-        caseId: data.caseId,
-        plaintiff: data.clientIds[0] || 'Autor', // Usar primeiro cliente como autor
-        defendant: data.opposingParty || 'Réu',
-        subject: data.title,
-        class: 'Processo',
-        distributionDate: data.filingDate,
+        internalNumber: data.internalNumber,
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        phase: 'initial', // Sempre inicial na criação
+        priority: data.priority,
+        responsibleLawyerId: data.responsibleLawyerId,
         court: data.court.court,
         district: data.court.district,
         city: data.court.city,
         state: data.court.state,
+        country: data.court.country,
+        opposingParty: data.opposingParty,
+        opposingLawyer: data.opposingLawyer,
+        processValueAmount: data.processValue?.amount,
+        processValueDescription: data.processValue?.description,
+        filingDate: data.filingDate,
+        citationDate: data.citationDate,
+        notes: data.notes,
+        tags: data.tags || [],
+        isConfidential: data.isConfidential,
+        status: 'active', // Sempre ativo na criação
+        // Campos legacy para compatibilidade
+        caseId: data.caseId,
+        plaintiff: data.clientIds[0] || 'Autor',
+        defendant: data.opposingParty || 'Réu',
+        subject: data.title,
+        class: 'Processo',
+        distributionDate: data.filingDate,
         lawyerPlaintiff: data.responsibleLawyerId,
         claimValue: data.processValue?.amount || 0,
-        observations: data.notes,
-        tags: data.tags || []
+        observations: data.notes
       });
 
       if (response.data.success) {
@@ -477,19 +496,39 @@ class ProcessesService {
   async updateProcess(id: string, data: UpdateProcessRequest): Promise<Process> {
     try {
       const response = await axios.put(`${API_BASE_URL}/processes/${id}`, {
+        // Campos modernos
         number: data.number,
+        internalNumber: data.internalNumber,
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        phase: data.phase,
+        priority: data.priority,
+        responsibleLawyerId: data.responsibleLawyerId,
+        court: data.court?.court,
+        district: data.court?.district,
+        city: data.court?.city,
+        state: data.court?.state,
+        country: data.court?.country,
+        opposingParty: data.opposingParty,
+        opposingLawyer: data.opposingLawyer,
+        processValueAmount: data.processValue?.amount,
+        processValueDescription: data.processValue?.description,
+        filingDate: data.filingDate,
+        citationDate: data.citationDate,
+        notes: data.notes,
+        tags: data.tags || [],
+        isConfidential: data.isConfidential,
+        status: data.status,
+        // Campos legacy para compatibilidade
         plaintiff: data.clientIds?.[0] || undefined,
         defendant: data.opposingParty,
         subject: data.title,
         class: 'Processo',
         distributionDate: data.filingDate,
-        court: data.court?.court,
-        district: data.court?.district,
-        city: data.court?.city,
-        state: data.court?.state,
-        status: data.status,
         claimValue: data.processValue?.amount || 0,
-        observations: data.notes
+        observations: data.notes,
+        lawyerPlaintiff: data.responsibleLawyerId
       });
 
       if (response.data.success) {

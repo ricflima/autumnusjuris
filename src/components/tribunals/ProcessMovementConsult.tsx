@@ -226,7 +226,10 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
             <div>
               <h4 className="font-medium mb-3">Últimas Movimentações</h4>
               <div className={`space-y-2 overflow-y-auto ${showAllMovements ? 'max-h-96' : 'max-h-60'}`}>
-                {(showAllMovements ? result.movements : result.movements.slice(0, 5)).map((movement, index) => (
+                {(showAllMovements ? 
+                  result.movements.sort((a, b) => new Date(b.movementDate).getTime() - new Date(a.movementDate).getTime()) : 
+                  result.movements.sort((a, b) => new Date(b.movementDate).getTime() - new Date(a.movementDate).getTime()).slice(0, 5)
+                ).map((movement, index) => (
                   <div key={index} className="p-3 border rounded-lg bg-white">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ProcessNumberInput } from '@/components/ui/process-number-input';
+import { ProcessNumberInput, applyProcessNumberMask } from '@/components/ui/process-number-input';
 
 import { processesService } from '@/services/processes.service';
 import { casesService } from '@/services/cases.service';
@@ -52,11 +52,10 @@ const PROCESS_STATUS = [
 
 const PROCESS_PHASES = [
   { value: 'initial', label: 'Inicial' },
-  { value: 'investigation', label: 'Instrução' },
-  { value: 'decision', label: 'Decisão' },
+  { value: 'instruction', label: 'Instrução' },
+  { value: 'judgment', label: 'Julgamento' },
   { value: 'appeal', label: 'Recurso' },
   { value: 'execution', label: 'Execução' },
-  { value: 'final', label: 'Final' },
 ] as const;
 
 const BRAZILIAN_STATES = [
@@ -100,17 +99,30 @@ export default function EditProcess() {
   } = useForm<UpdateProcessFormData>({
     resolver: zodResolver(updateProcessSchema),
     defaultValues: {
+      number: '',
+      internalNumber: '',
       title: '',
       description: '',
       type: 'civil',
       status: 'active',
       phase: 'initial',
       priority: 'medium',
+      caseId: '',
+      clientIds: [],
+      responsibleLawyerId: '',
       court: '',
       district: '',
       city: '',
       state: 'SP',
       country: 'Brasil',
+      opposingParty: '',
+      opposingLawyer: '',
+      processValue: '',
+      processValueDescription: '',
+      filingDate: '',
+      citationDate: '',
+      notes: '',
+      tags: '',
       isConfidential: false,
     },
     mode: 'onChange',
@@ -266,6 +278,14 @@ export default function EditProcess() {
     );
   }
 
+  // Debug temporário
+  console.log('Form Debug:', { 
+    isValid, 
+    isDirty, 
+    errors: Object.keys(errors), 
+    errorDetails: errors 
+  });
+
   if (isError || !process) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -320,7 +340,7 @@ export default function EditProcess() {
               
               <Button
                 onClick={handleSubmit(onSubmit)}
-                disabled={!isValid || !isDirty || isSubmitting}
+                disabled={!isValid || isSubmitting}
                 className="flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
@@ -346,7 +366,11 @@ export default function EditProcess() {
                 <ProcessNumberInput
                   id="number"
                   value={watch('number')}
-                  onChange={(value) => setValue('number', value, { shouldValidate: true })}
+                  onChange={(value) => {
+                    // Aplicar formatação CNJ se o valor tem 20 dígitos
+                    const formattedValue = value.length === 20 ? applyProcessNumberMask(value) : value;
+                    setValue('number', formattedValue, { shouldValidate: true });
+                  }}
                   placeholder="0000000-00.0000.0.00.0000"
                   error={errors.number?.message}
                 />
@@ -399,12 +423,11 @@ export default function EditProcess() {
                   {...register('type')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="civil">Cível</option>
-                  <option value="criminal">Criminal</option>
-                  <option value="labor">Trabalhista</option>
-                  <option value="administrative">Administrativo</option>
-                  <option value="tax">Tributário</option>
-                  <option value="family">Família</option>
+                  {PROCESS_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               
@@ -430,11 +453,11 @@ export default function EditProcess() {
                   {...register('phase')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="initial">Inicial</option>
-                  <option value="instruction">Instrução</option>
-                  <option value="judgment">Julgamento</option>
-                  <option value="appeal">Recurso</option>
-                  <option value="execution">Execução</option>
+                  {PROCESS_PHASES.map(phase => (
+                    <option key={phase.value} value={phase.value}>
+                      {phase.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               
@@ -480,14 +503,22 @@ export default function EditProcess() {
               </div>
 
               <div>
-                <Label>Clientes Envolvidos</Label>
+                <Label>Clientes Envolvidos *</Label>
                 <div className="max-h-32 overflow-y-auto border rounded-md p-2">
                   {clientsData?.clients.map(client => (
                     <label key={client.id} className="flex items-center gap-2 py-1">
                       <input
                         type="checkbox"
-                        value={client.id}
-                        {...register('clientIds')}
+                        checked={watchClientIds?.includes(client.id)}
+                        onChange={(e) => {
+                          let newIds: string[] = [];
+                          if (e.target.checked) {
+                            newIds = [...(watchClientIds || []), client.id];
+                          } else {
+                            newIds = (watchClientIds || []).filter(id => id !== client.id);
+                          }
+                          setValue('clientIds', newIds, { shouldValidate: true });
+                        }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm">
@@ -496,6 +527,26 @@ export default function EditProcess() {
                     </label>
                   ))}
                 </div>
+                {errors.clientIds && (
+                  <p className="mt-1 text-sm text-red-600">{errors.clientIds.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="responsibleLawyerId">Advogado Responsável *</Label>
+                <select
+                  id="responsibleLawyerId"
+                  {...register('responsibleLawyerId')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecione o advogado</option>
+                  <option value="lawyer-1">Dr. João Silva - OAB/SP 123456</option>
+                  <option value="lawyer-2">Dra. Maria Santos - OAB/SP 789012</option>
+                  <option value="lawyer-3">Dr. Pedro Costa - OAB/SP 345678</option>
+                </select>
+                {errors.responsibleLawyerId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.responsibleLawyerId.message}</p>
+                )}
               </div>
             </div>
           </Card>
@@ -519,7 +570,7 @@ export default function EditProcess() {
               </div>
               
               <div>
-                <Label htmlFor="district">Comarca</Label>
+                <Label htmlFor="district">Comarca *</Label>
                 <Input
                   id="district"
                   {...register('district')}
@@ -528,7 +579,7 @@ export default function EditProcess() {
               </div>
               
               <div>
-                <Label htmlFor="city">Cidade</Label>
+                <Label htmlFor="city">Cidade *</Label>
                 <Input
                   id="city"
                   {...register('city')}
@@ -537,7 +588,7 @@ export default function EditProcess() {
               </div>
               
               <div>
-                <Label htmlFor="state">Estado</Label>
+                <Label htmlFor="state">Estado *</Label>
                 <select
                   id="state"
                   {...register('state')}
@@ -552,7 +603,7 @@ export default function EditProcess() {
               </div>
               
               <div>
-                <Label htmlFor="country">País</Label>
+                <Label htmlFor="country">País *</Label>
                 <Input
                   id="country"
                   {...register('country')}
@@ -630,7 +681,7 @@ export default function EditProcess() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="filingDate">Data de Ajuizamento</Label>
+                <Label htmlFor="filingDate">Data de Ajuizamento *</Label>
                 <Input
                   id="filingDate"
                   {...register('filingDate')}
@@ -727,7 +778,7 @@ export default function EditProcess() {
             
             <Button
               type="submit"
-              disabled={!isValid || !isDirty || isSubmitting}
+              disabled={!isValid || isSubmitting}
               className="flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
