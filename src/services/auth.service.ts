@@ -282,20 +282,20 @@ class AuthService {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Mock users for development
+    // Mock users for development (using real database UUIDs)
     const mockUsers = [
       {
-        id: '1',
+        id: 'bcf17e38-19f8-4784-aeeb-c1713c019b65',
         name: 'Dr. João Silva',
-        email: 'joao@autumnusjuris.com',
+        email: 'admin@autumnusjuris.com',
         password: '123456',
         role: 'admin' as const,
         organizationName: 'Silva & Advogados',
       },
       {
-        id: '2',
+        id: 'd609f61c-5463-4464-b12d-b52e64100687',
         name: 'Dra. Maria Santos',
-        email: 'maria@autumnusjuris.com',
+        email: 'lawyer1@autumnusjuris.com',
         password: '123456',
         role: 'lawyer' as const,
         organizationName: 'Santos Advocacia',

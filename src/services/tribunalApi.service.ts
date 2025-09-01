@@ -50,6 +50,8 @@ interface BatchResult {
 class TribunalApiService {
   private static instance: TribunalApiService;
   private baseUrl: string;
+  private requestCache = new Map<string, Promise<any>>();
+  private cacheTimeout = 5000; // 5 segundos
 
   private constructor() {
     this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://172.25.132.0:3001/api';
@@ -61,6 +63,55 @@ class TribunalApiService {
       TribunalApiService.instance = new TribunalApiService();
     }
     return TribunalApiService.instance;
+  }
+
+  /**
+   * Cache para evitar requisições duplicadas
+   */
+  private getCachedRequest<T>(key: string, request: () => Promise<T>): Promise<T> {
+    if (this.requestCache.has(key)) {
+      console.log('[TribunalApiService] Usando cache para:', key);
+      return this.requestCache.get(key)!;
+    }
+
+    const promise = request().finally(() => {
+      // Remove do cache após timeout
+      setTimeout(() => {
+        this.requestCache.delete(key);
+      }, this.cacheTimeout);
+    });
+
+    this.requestCache.set(key, promise);
+    return promise;
+  }
+
+  /**
+   * Invalidar cache para processos específicos ou geral
+   */
+  private invalidateCache(processNumbers?: string[]): void {
+    if (processNumbers) {
+      // Invalidar cache específico de processos
+      processNumbers.forEach(processNumber => {
+        const keys = [`getStoredMovements-${processNumber}`];
+        keys.forEach(key => this.requestCache.delete(key));
+      });
+      console.log(`[TribunalApiService] Cache invalidado para ${processNumbers.length} processos`);
+    }
+    
+    // Sempre invalidar cache geral
+    const generalKeys = Array.from(this.requestCache.keys()).filter(key => 
+      key.startsWith('getAllStoredMovements-')
+    );
+    generalKeys.forEach(key => this.requestCache.delete(key));
+    console.log(`[TribunalApiService] Cache geral invalidado: ${generalKeys.length} entradas`);
+  }
+
+  /**
+   * Método público para limpar todo o cache
+   */
+  public clearCache(): void {
+    this.requestCache.clear();
+    console.log('[TribunalApiService] Todo o cache foi limpo');
   }
 
   /**
@@ -206,6 +257,11 @@ class TribunalApiService {
       const data: BatchResult = await response.json();
       console.log(`[TribunalApiService] Lote concluído: ${data.summary?.successful || 0}/${data.summary?.total || 0} sucessos`);
       
+      // Invalidar cache após consulta bem-sucedida
+      if (data.success && data.persisted > 0) {
+        this.invalidateCache(processNumbers);
+      }
+      
       return data;
 
     } catch (error) {
@@ -228,6 +284,97 @@ class TribunalApiService {
         message: 'Erro na consulta em lote'
       };
     }
+  }
+
+  /**
+   * Buscar movimentações já salvas para um processo específico
+   */
+  async getStoredMovements(processNumber: string): Promise<{
+    success: boolean;
+    movements: TribunalMovement[];
+    processNumber: string;
+    error?: string;
+  }> {
+    console.log(`[TribunalApiService] Buscando movimentações salvas para: ${processNumber}`);
+
+    const cacheKey = `getStoredMovements-${processNumber}`;
+    
+    return this.getCachedRequest(cacheKey, async () => {
+      try {
+        const response = await fetch(`${this.baseUrl}/tribunal/movements/${encodeURIComponent(processNumber)}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        return {
+          success: true,
+          movements: data.movements || [],
+          processNumber
+        };
+
+      } catch (error) {
+        console.error('[TribunalApiService] Erro ao buscar movimentações salvas:', error);
+        
+        return {
+          success: false,
+          movements: [],
+          processNumber,
+          error: error instanceof Error ? error.message : 'Erro desconhecido'
+        };
+      }
+    });
+  }
+
+  /**
+   * Buscar todas as movimentações salvas de processos de um usuário
+   */
+  async getAllStoredMovements(userId?: string): Promise<{
+    success: boolean;
+    movements: TribunalMovement[];
+    totalCount: number;
+    processCount: number;
+    error?: string;
+  }> {
+    console.log(`[TribunalApiService] Buscando todas movimentações salvas${userId ? ` para usuário: ${userId}` : ''}`);
+
+    const cacheKey = `getAllStoredMovements-${userId || 'all'}`;
+    
+    return this.getCachedRequest(cacheKey, async () => {
+      try {
+        const url = userId 
+          ? `${this.baseUrl}/tribunal/movements/user/${encodeURIComponent(userId)}`
+          : `${this.baseUrl}/tribunal/movements/all`;
+        
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        return {
+          success: true,
+          movements: data.movements || [],
+          totalCount: data.totalCount || 0,
+          processCount: data.processCount || 0
+        };
+
+      } catch (error) {
+        console.error('[TribunalApiService] Erro ao buscar todas movimentações:', error);
+        
+        return {
+          success: false,
+          movements: [],
+          totalCount: 0,
+          processCount: 0,
+          error: error instanceof Error ? error.message : 'Erro desconhecido'
+        };
+      }
+    });
   }
 
   /**

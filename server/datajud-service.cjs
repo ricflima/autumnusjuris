@@ -92,16 +92,16 @@ class DatajudService {
     this.lastRequestTime = Date.now();
   }
 
-  // Gerar hash simples
-  generateHash(processNumber, tribunal, date, code, name) {
-    const hashInput = `${tribunal}-${processNumber}-${date}-${code}-${name}`;
+  // Gerar hash determinístico baseado no conteúdo
+  generateHash(processNumber, tribunal, date, code, name, index = 0) {
+    const hashInput = `${processNumber}|${date}|${code}|${name}|${index}`;
     let hash = 0;
     for (let i = 0; i < hashInput.length; i++) {
       const char = hashInput.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash;
     }
-    return Math.abs(hash).toString(16) + Date.now().toString(16).slice(-8);
+    return Math.abs(hash).toString(16);
   }
 
   // Converter movimentos DataJud para nossa estrutura
@@ -117,7 +117,7 @@ class DatajudService {
       title: mov.nome,
       description: this.buildDescription(mov),
       isJudicial: this.classifyMovement(mov),
-      hash: this.generateHash(processNumber, tribunal, mov.dataHora, mov.codigo, mov.nome),
+      hash: this.generateHash(processNumber, tribunal, mov.dataHora, mov.codigo, mov.nome, index),
       source: 'datajud',
       discoveredAt: now,
       isNew: true,

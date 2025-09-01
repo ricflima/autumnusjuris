@@ -515,4 +515,3 @@ export default class TribunalDatabaseService {
   }
 }
 
-// export default TribunalDatabaseService; // Removido - já está no topo da classe

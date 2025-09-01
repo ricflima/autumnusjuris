@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 const fileUpload = require('express-fileupload');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 
 // Carregar variáveis de ambiente
@@ -800,9 +801,28 @@ app.get('/api/processes', async (req, res) => {
     }
     
     if (userId) {
+      // Verificar se é um UUID válido ou string simples
+      let isUuid = false;
+      try {
+        // Verificar formato UUID (aproximado)
+        isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      } catch (err) {
+        isUuid = false;
+      }
+      
+      // Se não for UUID, tentar converter com base nos usuários mock
+      let finalUserId = userId;
+      if (!isUuid) {
+        const userMap = {
+          '1': 'bcf17e38-19f8-4784-aeeb-c1713c019b65',
+          '2': 'd609f61c-5463-4464-b12d-b52e64100687'
+        };
+        finalUserId = userMap[userId] || userId;
+      }
+      
       paramCount++;
       whereConditions.push(`c.lawyer_id = $${paramCount}`);
-      queryParams.push(userId);
+      queryParams.push(finalUserId);
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -996,6 +1016,35 @@ function formatProcessNumber(numero) {
 
   // Aplicar máscara: NNNNNNN-DD.AAAA.J.TR.OOOO
   return `${cleanNumber.substring(0, 7)}-${cleanNumber.substring(7, 9)}.${cleanNumber.substring(9, 13)}.${cleanNumber.substring(13, 14)}.${cleanNumber.substring(14, 16)}.${cleanNumber.substring(16, 20)}`;
+}
+
+// Função auxiliar para mapear movimentações do banco de dados
+function mapDatabaseMovement(row, includeProcessInfo = false) {
+  const baseMovement = {
+    id: row.id,
+    processNumber: row.cnj_number,
+    tribunal: row.tribunal_name,
+    movementDate: row.movement_date,
+    title: row.title,
+    description: row.description || '',
+    content: row.content || '',
+    isJudicial: row.is_judicial || false,
+    hash: row.hash,
+    source: 'database',
+    discoveredAt: row.created_at,
+    isNew: row.is_novelty && row.novelty_expires_at && new Date(row.novelty_expires_at) > new Date(),
+    metadata: {
+      tribunalCode: row.tribunal_code,
+      cleanNumber: row.clean_number
+    }
+  };
+
+  if (includeProcessInfo) {
+    baseMovement.metadata.processId = row.process_id;
+    baseMovement.metadata.processTitle = row.process_title;
+  }
+
+  return baseMovement;
 }
 
 // Criar processo
@@ -1484,12 +1533,58 @@ app.post('/api/tribunal/movements/batch', async (req, res) => {
       results = batchResult.results;
       
       // Calcular estatísticas
-      results.forEach(result => {
-        if (result.success) {
-          persisted += result.totalMovements || 0;
-          newMovements += result.newMovements || 0;
+      // Persistir todas as movimentações retornadas
+      for (const result of results) {
+        if (result.success && result.movements) {
+          for (const movement of result.movements) {
+            try {
+              const result = await pool.query(`
+                INSERT INTO tribunal_movements (
+                  cnj_number, clean_number, tribunal_code, tribunal_name,
+                  movement_date, title, description, content, hash,
+                  is_judicial, is_novelty, novelty_expires_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ON CONFLICT (cnj_number, hash) DO UPDATE SET
+                  is_novelty = CASE WHEN EXCLUDED.is_novelty = true THEN true ELSE tribunal_movements.is_novelty END,
+                  novelty_expires_at = CASE WHEN EXCLUDED.is_novelty = true THEN EXCLUDED.novelty_expires_at ELSE tribunal_movements.novelty_expires_at END,
+                  updated_at = CURRENT_TIMESTAMP
+                RETURNING (xmax = 0) AS inserted
+              `, [
+                movement.processNumber, // cnj_number
+                movement.processNumber.replace(/[.-]/g, ''), // clean_number
+                movement.tribunal, // tribunal_code
+                movement.tribunal, // tribunal_name
+                movement.movementDate,
+                movement.title,
+                movement.description,
+                movement.description, // content (usar description como content)
+                movement.hash, // usar hash do DataJud
+                movement.isJudicial || true,
+                movement.isNew || false,
+                movement.isNew ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null // novelty expires in 7 days
+              ]);
+              
+              // Verificar se foi inserido (xmax = 0) ou atualizado (xmax > 0)
+              const wasInserted = result.rows[0]?.inserted;
+              if (wasInserted) {
+                persisted++;
+                if (movement.isNew) newMovements++;
+              } else {
+                duplicates++;
+                console.log(`[API] Movimento duplicado atualizado: ${movement.hash} - ${movement.title}`);
+              }
+            
+            } catch (err) {
+              if (err.code === '23505') { // Unique violation
+                duplicates++;
+              } else {
+                console.error('Erro ao persistir movimentação:', err);
+                throw err;
+              }
+            }
+          }
         }
-      });
+      }
 
       console.log(`[API] Lote concluído: ${batchResult.summary.successful}/${batchResult.summary.total} sucessos`);
       console.log(`[API] Total de movimentações: ${batchResult.summary.totalMovements}`);
@@ -1503,13 +1598,13 @@ app.post('/api/tribunal/movements/batch', async (req, res) => {
     if (movements && Array.isArray(movements)) {
       for (const movement of movements) {
         try {
-          await pool.query(`
+          const result = await pool.query(`
             INSERT INTO tribunal_movements (
               cnj_number, clean_number, tribunal_code, tribunal_name,
               movement_date, title, description, content, hash,
               is_judicial, is_novelty, novelty_expires_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            ON CONFLICT (hash) DO NOTHING
+            ON CONFLICT (cnj_number, hash) DO NOTHING
           `, [
             movement.cnj_number,
             movement.clean_number,
@@ -1525,8 +1620,14 @@ app.post('/api/tribunal/movements/batch', async (req, res) => {
             movement.novelty_expires_at || null
           ]);
         
-          persisted++;
-          if (movement.is_novelty) newMovements++;
+          // Verificar se foi realmente inserido
+          if (result.rowCount > 0) {
+            persisted++;
+            if (movement.is_novelty) newMovements++;
+          } else {
+            duplicates++;
+            console.log(`[API] Movimento duplicado ignorado: ${movement.hash} - ${movement.title}`);
+          }
         
       } catch (err) {
         if (err.code === '23505') { // Unique violation
@@ -1751,6 +1852,134 @@ app.post('/api/tribunal/cleanup', async (req, res) => {
   } catch (error) {
     console.error('Erro na limpeza:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Buscar movimentações salvas de um processo específico
+app.get('/api/tribunal/movements/:cnj', async (req, res) => {
+  try {
+    const { cnj } = req.params;
+    
+    const result = await pool.query(`
+      SELECT 
+        id,
+        cnj_number,
+        clean_number,
+        tribunal_code,
+        tribunal_name,
+        movement_date,
+        title,
+        description,
+        content,
+        hash,
+        is_judicial,
+        is_novelty,
+        novelty_expires_at,
+        created_at,
+        updated_at
+      FROM tribunal_movements 
+      WHERE cnj_number = $1 
+      ORDER BY movement_date DESC
+    `, [cnj]);
+
+    // Transformar dados para formato esperado pelo frontend
+    const movements = result.rows.map(row => mapDatabaseMovement(row));
+
+    res.json({
+      success: true,
+      movements,
+      processNumber: cnj,
+      totalCount: movements.length
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar movimentações salvas:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erro interno do servidor',
+      movements: [],
+      processNumber: req.params.cnj,
+      totalCount: 0
+    });
+  }
+});
+
+// Buscar todas as movimentações salvas de processos de um usuário
+app.get('/api/tribunal/movements/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Verificar se é um UUID válido ou string simples
+    let isUuid = false;
+    try {
+      // Verificar formato UUID (aproximado)
+      isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    } catch (err) {
+      isUuid = false;
+    }
+    
+    // Se não for UUID, tentar converter com base nos usuários mock
+    let finalUserId = userId;
+    if (!isUuid) {
+      const userMap = {
+        '1': 'bcf17e38-19f8-4784-aeeb-c1713c019b65',
+        '2': 'd609f61c-5463-4464-b12d-b52e64100687'
+      };
+      finalUserId = userMap[userId] || userId;
+    }
+    
+    // Buscar processos do usuário e suas movimentações
+    const result = await pool.query(`
+      SELECT 
+        tm.id,
+        tm.cnj_number,
+        tm.clean_number,
+        tm.tribunal_code,
+        tm.tribunal_name,
+        tm.movement_date,
+        tm.title,
+        tm.description,
+        tm.content,
+        tm.hash,
+        tm.is_judicial,
+        tm.is_novelty,
+        tm.novelty_expires_at,
+        tm.created_at,
+        tm.updated_at,
+        p.id as process_id,
+        p.title as process_title
+      FROM tribunal_movements tm
+      INNER JOIN processes p ON tm.cnj_number = p.number
+      INNER JOIN cases c ON p.case_id = c.id
+      WHERE c.lawyer_id = $1 
+      ORDER BY tm.movement_date DESC
+    `, [finalUserId]);
+
+    // Transformar dados para formato esperado pelo frontend
+    const movements = result.rows.map(row => mapDatabaseMovement(row, true));
+
+    // Calcular estatísticas
+    const processNumbers = [...new Set(movements.map(m => m.processNumber))];
+    const totalCount = movements.length;
+    const processCount = processNumbers.length;
+
+    res.json({
+      success: true,
+      movements,
+      totalCount,
+      processCount,
+      processNumbers
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar movimentações do usuário:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erro interno do servidor',
+      movements: [],
+      totalCount: 0,
+      processCount: 0
+    });
   }
 });
 

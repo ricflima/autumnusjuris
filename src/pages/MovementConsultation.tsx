@@ -1,11 +1,29 @@
-import React, { useState } from 'react';
-import { RefreshCw, Building2, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Building2, Clock, CheckCircle, XCircle, AlertTriangle, Eye, Search, Filter } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import TribunalApiService from '@/services/tribunalApi.service';
+
+interface TribunalMovement {
+  id: string;
+  processNumber: string;
+  tribunal: string;
+  movementDate: string;
+  title: string;
+  description: string;
+  isNew: boolean;
+  isJudicial: boolean;
+  discoveredAt: string;
+  metadata?: {
+    processTitle?: string;
+    tribunalCode?: string;
+  };
+}
 
 interface ProcessConsultationResult {
   processNumber: string;
@@ -19,41 +37,115 @@ interface ProcessConsultationResult {
 
 export default function MovementConsultation() {
   const { user } = useAuth();
+  const [movements, setMovements] = useState<TribunalMovement[]>([]);
+  const [filteredMovements, setFilteredMovements] = useState<TribunalMovement[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isConsulting, setIsConsulting] = useState(false);
-  const [results, setResults] = useState<ProcessConsultationResult[]>([]);
+  const [consultationResults, setConsultationResults] = useState<ProcessConsultationResult[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [lastConsultation, setLastConsultation] = useState<Date | null>(null);
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTribunal, setSelectedTribunal] = useState<string>('all');
+  const [selectedProcess, setSelectedProcess] = useState<string>('all');
+  const [showOnlyNew, setShowOnlyNew] = useState(false);
 
   const service = TribunalApiService.getInstance();
 
-  // Função para buscar todos os processos do usuário
+  // Carregar movimentações salvas ao montar o componente
+  useEffect(() => {
+    if (user?.id) {
+      loadStoredMovements();
+    }
+  }, [user?.id]);
+
+  // Aplicar filtros
+  useEffect(() => {
+    applyFilters();
+  }, [movements, searchTerm, selectedTribunal, selectedProcess, showOnlyNew]);
+
+  const loadStoredMovements = async () => {
+    setIsLoading(true);
+    
+    try {
+      const result = await service.getAllStoredMovements(user?.id);
+      
+      if (result.success) {
+        setMovements(result.movements);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar movimentações:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...movements];
+
+    // Filtro por texto
+    if (searchTerm) {
+      filtered = filtered.filter(movement => 
+        movement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        movement.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        movement.processNumber.includes(searchTerm)
+      );
+    }
+
+    // Filtro por tribunal
+    if (selectedTribunal !== 'all') {
+      filtered = filtered.filter(movement => movement.tribunal === selectedTribunal);
+    }
+
+    // Filtro por processo
+    if (selectedProcess !== 'all') {
+      filtered = filtered.filter(movement => movement.processNumber === selectedProcess);
+    }
+
+    // Filtro por novidades
+    if (showOnlyNew) {
+      filtered = filtered.filter(movement => movement.isNew);
+    }
+
+    // Ordenar por data mais recente
+    filtered.sort((a, b) => new Date(b.movementDate).getTime() - new Date(a.movementDate).getTime());
+
+    setFilteredMovements(filtered);
+  };
+
+  // Buscar todos os processos do usuário
   const fetchUserProcesses = async (): Promise<string[]> => {
     try {
-      // Buscar processos reais do banco de dados
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://172.25.132.0:3001/api'}/processes?userId=${user?.id}`);
       if (response.ok) {
         const data = await response.json();
         return data.processes.map((p: any) => p.number).filter(Boolean);
       }
     } catch (error) {
-      console.log('Erro ao buscar processos do banco, usando processo padrão:', error);
+      console.log('Erro ao buscar processos do banco:', error);
     }
     
-    // Fallback: usar processo conhecido do usuário atual
-    return ['1000057-13.2025.8.26.0232'];
+    return [];
   };
 
   const consultAllProcesses = async () => {
     if (isConsulting) return;
     
     setIsConsulting(true);
-    setResults([]);
+    setConsultationResults([]);
     
     try {
       await service.initialize();
       
       // Buscar processos do usuário
       const userProcesses = await fetchUserProcesses();
+      
+      if (userProcesses.length === 0) {
+        alert('Nenhum processo encontrado para o usuário atual');
+        return;
+      }
+
       setProgress({ current: 0, total: userProcesses.length });
       
       const consultationResults: ProcessConsultationResult[] = [];
@@ -78,33 +170,16 @@ export default function MovementConsultation() {
             const tribunal = validation.parsedNumber.tribunal;
             const codigo = segmento + tribunal;
             
-            // Mapeamento baseado no código CNJ
             const tribunalMap: Record<string, string> = {
-              // Tribunais Federais
-              '401': 'TRF da 1ª Região',
-              '402': 'TRF da 2ª Região', 
-              '403': 'TRF da 3ª Região',
-              '404': 'TRF da 4ª Região',
-              '405': 'TRF da 5ª Região',
-              '406': 'TRF da 6ª Região',
-              
-              // Tribunais de Justiça
-              '825': 'Tribunal de Justiça de São Paulo',
-              '826': 'Tribunal de Justiça de São Paulo',
-              '819': 'Tribunal de Justiça do Rio de Janeiro',
-              '813': 'Tribunal de Justiça de Minas Gerais',
-              '821': 'Tribunal de Justiça do Rio Grande do Sul',
-              '816': 'Tribunal de Justiça do Paraná',
-              '807': 'Tribunal de Justiça de Santa Catarina',
-              '805': 'Tribunal de Justiça da Bahia',
-              '803': 'Tribunal de Justiça do Ceará',
-              
-              // Tribunais do Trabalho
-              '501': 'TRT da 1ª Região (RJ)',
-              '502': 'TRT da 2ª Região (SP)', 
-              '503': 'TRT da 3ª Região (MG)',
-              '504': 'TRT da 4ª Região (RS)',
-              '509': 'TRT da 9ª Região (PR)'
+              '401': 'TRF da 1ª Região', '402': 'TRF da 2ª Região', '403': 'TRF da 3ª Região',
+              '404': 'TRF da 4ª Região', '405': 'TRF da 5ª Região', '406': 'TRF da 6ª Região',
+              '825': 'Tribunal de Justiça de São Paulo', '826': 'Tribunal de Justiça de São Paulo',
+              '819': 'Tribunal de Justiça do Rio de Janeiro', '813': 'Tribunal de Justiça de Minas Gerais',
+              '821': 'Tribunal de Justiça do Rio Grande do Sul', '816': 'Tribunal de Justiça do Paraná',
+              '807': 'Tribunal de Justiça de Santa Catarina', '805': 'Tribunal de Justiça da Bahia',
+              '803': 'Tribunal de Justiça do Ceará', '501': 'TRT da 1ª Região (RJ)',
+              '502': 'TRT da 2ª Região (SP)', '503': 'TRT da 3ª Região (MG)',
+              '504': 'TRT da 4ª Região (RS)', '509': 'TRT da 9ª Região (PR)'
             };
             
             result.tribunal = tribunalMap[codigo] || validation.tribunalInfo?.segmento || `Tribunal ${codigo}`;
@@ -133,14 +208,16 @@ export default function MovementConsultation() {
         }
         
         consultationResults.push(result);
-        setResults([...consultationResults]);
+        setConsultationResults([...consultationResults]);
         
-        // Pequeno delay entre consultas para não sobrecarregar os tribunais
+        // Pequeno delay entre consultas
         if (i < userProcesses.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
       
+      // Recarregar movimentações após a consulta
+      await loadStoredMovements();
       setLastConsultation(new Date());
       
     } catch (error) {
@@ -151,27 +228,13 @@ export default function MovementConsultation() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-500 animate-spin" />;
-      default: return <AlertTriangle className="w-4 h-4 text-gray-500" />;
-    }
-  };
+  // Extrair listas únicas para filtros
+  const uniqueTribunals = [...new Set(movements.map(m => m.tribunal))].sort();
+  const uniqueProcesses = [...new Set(movements.map(m => m.processNumber))].sort();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success': return 'bg-green-100 text-green-800';
-      case 'error': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const totalNewMovements = results.reduce((sum, r) => sum + r.newMovements, 0);
-  const successfulConsults = results.filter(r => r.status === 'success').length;
-  const failedConsults = results.filter(r => r.status === 'error').length;
+  const totalNewMovements = movements.filter(m => m.isNew).length;
+  const successfulConsults = consultationResults.filter(r => r.status === 'success').length;
+  const failedConsults = consultationResults.filter(r => r.status === 'error').length;
 
   return (
     <div className="space-y-6">
@@ -179,10 +242,10 @@ export default function MovementConsultation() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Building2 className="w-6 h-6" />
-          Consulta de Movimentações
+          Movimentações Processuais
         </h1>
         <p className="text-gray-600 mt-1">
-          Consulte todos os tribunais em busca de atualizações nos seus processos cadastrados
+          Todas as movimentações dos seus processos e consulta de novas atualizações
         </p>
       </div>
 
@@ -195,7 +258,7 @@ export default function MovementConsultation() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">
-                Consultar todos os processos cadastrados para o usuário <strong>{user?.name}</strong>
+                Consultar novos andamentos para todos os processos de <strong>{user?.name}</strong>
               </p>
               {lastConsultation && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -218,7 +281,7 @@ export default function MovementConsultation() {
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Consultar Todos
+                  Consultar Novos
                 </>
               )}
             </Button>
@@ -243,14 +306,14 @@ export default function MovementConsultation() {
       </Card>
 
       {/* Resumo dos Resultados */}
-      {results.length > 0 && (
+      {(movements.length > 0 || consultationResults.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Processos</p>
-                  <p className="text-2xl font-bold">{results.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Movimentações</p>
+                  <p className="text-2xl font-bold">{movements.length}</p>
                 </div>
                 <Building2 className="w-8 h-8 text-blue-500" />
               </div>
@@ -261,8 +324,8 @@ export default function MovementConsultation() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Sucessos</p>
-                  <p className="text-2xl font-bold text-green-600">{successfulConsults}</p>
+                  <p className="text-sm font-medium text-gray-600">Novidades</p>
+                  <p className="text-2xl font-bold text-green-600">{totalNewMovements}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
@@ -273,10 +336,10 @@ export default function MovementConsultation() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Falhas</p>
-                  <p className="text-2xl font-bold text-red-600">{failedConsults}</p>
+                  <p className="text-sm font-medium text-gray-600">Processos</p>
+                  <p className="text-2xl font-bold text-purple-600">{uniqueProcesses.length}</p>
                 </div>
-                <XCircle className="w-8 h-8 text-red-500" />
+                <AlertTriangle className="w-8 h-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
@@ -285,31 +348,165 @@ export default function MovementConsultation() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Novas Movimentações</p>
-                  <p className="text-2xl font-bold text-blue-600">{totalNewMovements}</p>
+                  <p className="text-sm font-medium text-gray-600">Tribunais</p>
+                  <p className="text-2xl font-bold text-orange-600">{uniqueTribunals.length}</p>
                 </div>
-                <AlertTriangle className="w-8 h-8 text-blue-500" />
+                <Building2 className="w-8 h-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Resultados Detalhados */}
-      {results.length > 0 && (
+      {/* Filtros */}
+      {movements.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Resultados da Consulta</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filtros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Buscar</label>
+                <Input
+                  placeholder="Buscar por título, descrição ou número..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Tribunal</label>
+                <Select value={selectedTribunal} onValueChange={setSelectedTribunal}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos os tribunais" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tribunais</SelectItem>
+                    {uniqueTribunals.map(tribunal => (
+                      <SelectItem key={tribunal} value={tribunal}>{tribunal}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Processo</label>
+                <Select value={selectedProcess} onValueChange={setSelectedProcess}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos os processos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os processos</SelectItem>
+                    {uniqueProcesses.map(process => (
+                      <SelectItem key={process} value={process}>{process}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button
+                variant={showOnlyNew ? "default" : "outline"}
+                onClick={() => setShowOnlyNew(!showOnlyNew)}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {showOnlyNew ? 'Todas' : 'Apenas Novas'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lista de Movimentações */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Movimentações ({filteredMovements.length})
+            {isLoading && (
+              <RefreshCw className="w-4 h-4 ml-2 animate-spin inline" />
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <RefreshCw className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+              <p className="text-gray-600">Carregando movimentações...</p>
+            </div>
+          ) : filteredMovements.length > 0 ? (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {filteredMovements.map((movement, index) => (
+                <div 
+                  key={movement.id}
+                  className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-sm">{movement.title}</p>
+                      {movement.isNew && (
+                        <Badge className="bg-blue-100 text-blue-800 text-xs px-2 py-0">NOVO</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{movement.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span className="font-mono">{movement.processNumber}</span>
+                      <span>{movement.tribunal}</span>
+                      <span>{new Date(movement.movementDate).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : movements.length > 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Search className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p>Nenhuma movimentação encontrada com os filtros aplicados</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedTribunal('all');
+                  setSelectedProcess('all');
+                  setShowOnlyNew(false);
+                }}
+              >
+                Limpar filtros
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p>Nenhuma movimentação encontrada</p>
+              <p className="text-sm mt-1">Clique em "Consultar Novos" para buscar atualizações</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Resultados da Última Consulta */}
+      {consultationResults.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultados da Última Consulta</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {results.map((result, index) => (
+              {consultationResults.map((result, index) => (
                 <div 
                   key={index}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex items-center gap-3">
-                    {getStatusIcon(result.status)}
+                    {result.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                    {result.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+                    {result.status === 'pending' && <Clock className="w-4 h-4 text-yellow-500 animate-spin" />}
                     <div>
                       <p className="font-medium">{result.processNumber}</p>
                       <p className="text-sm text-gray-600">{result.tribunal || 'Tribunal não identificado'}</p>
@@ -320,7 +517,11 @@ export default function MovementConsultation() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <Badge className={getStatusColor(result.status)}>
+                    <Badge className={
+                      result.status === 'success' ? 'bg-green-100 text-green-800' :
+                      result.status === 'error' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }>
                       {result.status === 'success' ? 'Sucesso' : 
                        result.status === 'error' ? 'Erro' : 'Consultando'}
                     </Badge>
@@ -339,21 +540,6 @@ export default function MovementConsultation() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Estado vazio */}
-      {!isConsulting && results.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhuma consulta realizada
-            </h3>
-            <p className="text-gray-600">
-              Clique em "Consultar Todos" para verificar atualizações em todos os seus processos
-            </p>
           </CardContent>
         </Card>
       )}

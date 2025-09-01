@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingScreen, LoadingSpinner } from '@/components/common/LoadingScreen';
+import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 import { formatDate, formatCurrency, formatDateWithTime } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const [showAddInteraction, setShowAddInteraction] = useState(false);
   const [newInteraction, setNewInteraction] = useState({
@@ -104,8 +106,8 @@ export default function ClientDetail() {
 
     addInteractionMutation.mutate({
       ...newInteraction,
-      userId: '1', // TODO: Usar ID do usuário logado
-      userName: 'Dr. João Silva', // TODO: Usar nome do usuário logado
+      userId: user?.id || '1',
+      userName: user?.name || 'Usuário Anônimo',
     });
   };
 

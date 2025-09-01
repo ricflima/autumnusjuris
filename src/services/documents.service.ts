@@ -27,7 +27,6 @@ import {
 } from '@/types/documents';
 
 // Cliente API será usado quando integrar com backend real
-// import { documentsApi, foldersApi, templatesApi } from '@/lib/api';
 
 // Mock data para desenvolvimento
 const MOCK_FOLDERS: DocumentFolder[] = [

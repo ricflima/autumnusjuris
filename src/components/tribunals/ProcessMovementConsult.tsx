@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw, Building2, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,49 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
   const [result, setResult] = useState<MovementResult | null>(null);
   const [lastConsultation, setLastConsultation] = useState<Date | null>(null);
   const [showAllMovements, setShowAllMovements] = useState(false);
+  const [isLoadingStored, setIsLoadingStored] = useState(false);
 
   const service = TribunalApiService.getInstance();
   const validation = service.validateCNJNumber(processNumber);
+
+  // Carregar movimentações salvas ao montar o componente
+  useEffect(() => {
+    if (processNumber && validation.isValid) {
+      loadStoredMovements();
+    }
+  }, [processNumber]);
+
+  const loadStoredMovements = async () => {
+    setIsLoadingStored(true);
+    
+    try {
+      const storedResult = await service.getStoredMovements(processNumber);
+      
+      if (storedResult.success && storedResult.movements.length > 0) {
+        const consultResult: MovementResult = {
+          success: true,
+          tribunal: getTribunalName(validation),
+          newMovements: 0, // Não há movimentações novas carregando do banco
+          totalMovements: storedResult.movements.length,
+          movements: storedResult.movements,
+          fromCache: true, // Indica que veio da base de dados
+          lastUpdate: new Date() // Data atual como referência
+        };
+        
+        setResult(consultResult);
+        
+        // Notificar componente pai se houver movimentações
+        if (onMovementsFound) {
+          onMovementsFound(storedResult.movements);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar movimentações salvas:', error);
+      // Não definir erro aqui, apenas log - deixar o usuário fazer consulta nova
+    } finally {
+      setIsLoadingStored(false);
+    }
+  };
 
   // Função para obter nome do tribunal baseado no CNJ
   const getTribunalName = (validation: any) => {
@@ -78,25 +118,29 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
     if (isConsulting || !validation.isValid) return;
     
     setIsConsulting(true);
-    setResult(null);
+    // NÃO limpar o resultado - manter movimentações existentes visíveis
     setShowAllMovements(false);
     
     try {
       await service.initialize();
       
+      // Primeiro fazer a consulta nova (que vai persistir no banco)
       const queryResult = await service.queryMovements(processNumber, {
         useCache: true,
         enablePersistence: true,
         enableNoveltyDetection: true
       });
       
+      // Depois buscar TODAS as movimentações do banco (antigas + novas)
+      const storedResult = await service.getStoredMovements(processNumber);
+      
       const consultResult: MovementResult = {
         success: queryResult.success,
         tribunal: getTribunalName(validation),
         newMovements: queryResult.newMovements || 0,
-        totalMovements: queryResult.totalMovements || 0,
-        movements: queryResult.movements || [],
-        fromCache: queryResult.fromCache || false,
+        totalMovements: storedResult.movements.length, // Total do banco
+        movements: storedResult.movements || [], // Todas as movimentações do banco
+        fromCache: false, // Nova consulta foi feita
         lastUpdate: new Date()
       };
       
@@ -107,9 +151,9 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
       setResult(consultResult);
       setLastConsultation(new Date());
       
-      // Notificar componente pai se houver movimentações
+      // Notificar componente pai com todas as movimentações
       if (queryResult.success && onMovementsFound) {
-        onMovementsFound(queryResult.movements || []);
+        onMovementsFound(storedResult.movements || []);
       }
       
     } catch (error) {
@@ -129,21 +173,27 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
   };
 
   const getStatusIcon = () => {
-    if (isConsulting) return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
+    if (isConsulting || isLoadingStored) return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
     if (!result) return <Building2 className="w-4 h-4 text-gray-500" />;
     if (result.success) return <CheckCircle className="w-4 h-4 text-green-500" />;
     return <XCircle className="w-4 h-4 text-red-500" />;
   };
 
   const getStatusText = () => {
+    if (isLoadingStored) return 'Carregando dados salvos...';
     if (isConsulting) return 'Consultando tribunal...';
     if (!result) return 'Clique para consultar movimentações';
-    if (result.success) return `Consulta realizada com sucesso`;
+    if (result.success) {
+      if (result.fromCache) {
+        return `Dados salvos carregados (${result.totalMovements} movimentações)`;
+      }
+      return `Consulta realizada com sucesso`;
+    }
     return `Falha na consulta: ${result.error}`;
   };
 
   const getStatusColor = () => {
-    if (isConsulting) return 'bg-blue-100 text-blue-800';
+    if (isConsulting || isLoadingStored) return 'bg-blue-100 text-blue-800';
     if (!result) return 'bg-gray-100 text-gray-800';
     if (result.success) return 'bg-green-100 text-green-800';
     return 'bg-red-100 text-red-800';
@@ -161,7 +211,7 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
             </span>
             <Button 
               onClick={consultMovements}
-              disabled={isConsulting || !validation.isValid}
+              disabled={isConsulting || isLoadingStored || !validation.isValid}
               size="sm"
             >
               {isConsulting ? (
@@ -169,10 +219,15 @@ export const ProcessMovementConsult: React.FC<ProcessMovementConsultProps> = ({
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                   Consultando
                 </>
+              ) : isLoadingStored ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Carregando
+                </>
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Consultar
+                  {result && result.fromCache ? 'Atualizar' : 'Consultar'}
                 </>
               )}
             </Button>
